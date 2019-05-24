@@ -19,7 +19,7 @@
 #ifndef DISPLAY_H_
 #define DISPLAY_H_
 
-#define WINDOW_TITLE "autower 2.0"
+#define WINDOW_TITLE "autower 2.01"
 
 #define DISPLAY_DEBUG 5
 #define DISPLAY_DETAIL 4

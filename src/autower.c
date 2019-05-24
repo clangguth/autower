@@ -67,6 +67,12 @@
   - different handling of slow FS startups, now progressively gives FS more time
     to get initialized, and keeps asking whether it should continue.
 
+2.01 - April 24, 2010
+- bugfix to handle UNC paths better. In fact, I'm now ignoring UNC as much as I can,
+  because it proved to be a freaking mess. Instead, I get the path from the running
+  FS9 process.
+- Another FSUIPC quirk: not cleaning up after myself, as this sometimes crashes FS
+  on shutdown.
 */
 
 #include <windows.h>
@@ -847,7 +853,12 @@ void mainLoop() {
 			}
 		}
 	}
+#ifndef BUILD_DLL
+	/* sometimes it's a bad idea to clean up after yourself.
+	   This sometimes crashes FS for reasons unknown to me.
+    */
 	FSUIPC_Close();
+#endif
 	display(DISPLAY_DETAIL, "Main loop finished");
 }
 
@@ -868,52 +879,51 @@ BOOL isUNCFileName(char* filename) {
 	return strlen(filename) > 6 && filename[0] == '\\' && filename[1] == '\\';
 }
 
-char getFS9DriveLetter() {
+BOOL getBasePathFromFS9(char* target) {
 	HWND hwnd;
 	DWORD pid = 0;
 	HANDLE hProcess = NULL;
 	HMODULE modules[1] = {0};
 	DWORD modulesCount = 0;
-	char buf[MAX_PATH];
-	char driveLetter = 0;
+	BOOL result = FALSE;
 
 	hwnd = FindWindowEx(NULL, NULL, "FS98MAIN", NULL);
-	if (!hwnd) return 0;
+	if (!hwnd) return FALSE;
 
 	GetWindowThreadProcessId(hwnd, &pid);
-	if (!pid) return 0;
+	if (!pid) return FALSE;
 
 	hProcess = OpenProcess(PROCESS_QUERY_INFORMATION |PROCESS_VM_READ, FALSE, pid);
-	if (!hProcess) return 0;
+	if (!hProcess) return FALSE;
 
 	if (!EnumProcessModules(hProcess, modules, 1, &modulesCount)) goto cleanup;
 	if (!modulesCount) goto cleanup;
 
-	GetModuleFileNameExA(hProcess, modules[0], buf, MAX_PATH);
-	if (isUNCFileName(buf)) goto cleanup;
-	if (strlen(buf) < 3 || buf[1] != ':') goto cleanup;
-	driveLetter = buf[0];
+	GetModuleFileNameExA(hProcess, modules[0], target, MAX_PATH);
+	if (isUNCFileName(target)) goto cleanup;
+	if (strlen(target) < 3 || target[1] != ':') goto cleanup;
+
+	int backslash = strlen(target) - 1;
+	while (target[backslash] != '\\') {
+		--backslash;
+	}
+	target[backslash+1] = '\0';
+	result = TRUE;
 
 	cleanup:
 	CloseHandle(hProcess);
-	return driveLetter;
+	return result;
 
 }
 
 BOOL findAlternativeBaseDir(char* alternative) {
 	/* we only even try to find an alternative if the original is a UNC path */
-	if (!isUNCFileName(fsBaseDir)) return FALSE;
-
-	char drive = getFS9DriveLetter();
-	if (!drive) return FALSE;
-
-	char* path = fsBaseDir;
-	int skip = 4;
-	while (skip > 0) {
-		if (*path++ == '\\') --skip;
+	if (!isUNCFileName(fsBaseDir)) {
+		display(DISPLAY_DEBUG, "Basedir is not a UNC path");
+		return FALSE;
 	}
-	sprintf(alternative, "%c:\\%s",drive,path);
-	return strcmp(alternative, fsBaseDir);
+
+	return getBasePathFromFS9(alternative);
 }
 
 BOOL setupChooseBaseDir() {
@@ -961,12 +971,13 @@ BOOL setupBaseDirVariable() {
 		display(DISPLAY_FATAL, "Problem determining FS9 installation directory!");
 		return FALSE;
 	}
+    display(DISPLAY_DETAIL, "FSUIPC returns basedir: %s", fsBaseDir);
 	/* append trailing slash if needed */
     if(fsBaseDir[strlen(fsBaseDir) - 1] != '\\'){
         strcat(fsBaseDir, "\\");
     }
     if (!setupChooseBaseDir()) return FALSE;
-    display(DISPLAY_DETAIL, "FS base directory is %s", fsBaseDir);
+    display(DISPLAY_DETAIL, "Using FS base directory: %s", fsBaseDir);
     return TRUE;
 }
 

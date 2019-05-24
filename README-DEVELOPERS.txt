@@ -53,7 +53,7 @@ delete the test project.
 STEP 5: IMPORT AUTOWER PROJECT
 ==============================
 in Eclipse, select File -> Import..., General -> Import existing projects into workspace,
-choose "archive", "autower2-src.zip"
+choose "archive", "autowerXYZ-src.zip"
 
 The project provides 3 build configurations:
 - Debug: debug version of the .exe

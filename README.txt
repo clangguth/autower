@@ -271,6 +271,11 @@ VERSION HISTORY
   - different handling of slow FS startups, now progressively gives FS more time
     to get initialized, and keeps asking whether it should continue.
 
+2.01 (Apr 24, 2010) - avoiding to mess with UNC paths as much as possible, as it
+                      proved to be an unreliable way to figure out where FS is
+                      installed. Now using the path from the running FS9.exe;
+                      Not closing the connection to FSUIPC on shutdown, as this
+                      sometimes causes FSUIPC to crash FS when terminating.
 
 
 ACKNOWLEDGEMENTS

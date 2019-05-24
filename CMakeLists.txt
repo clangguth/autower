@@ -13,6 +13,7 @@ if(CMAKE_ARTIFACT_TYPE MATCHES EXE)
     message("Artifact will be: autower.exe")
 
     add_executable(autower
+            icon.rc
             src/autower.c
             src/autower.h
             src/bgl.h
