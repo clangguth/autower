@@ -294,6 +294,11 @@ VERSION HISTORY
                        DLL variant with FS. Other changes include some modifi-
                        cations of the default configuration and new configura-
                        tion options, and a minimal performance optimization.
+                       
+2.1.1 (May 21, 2010) - Bugfix for airports below sea level (e.g. Schiphol).
+                       The altitude was wrongly treated as an unsigned number,
+                       which resulted in extreme positive values instead of
+                       negative ones.
 
 
 ACKNOWLEDGEMENTS

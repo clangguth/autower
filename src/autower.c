@@ -92,6 +92,10 @@
   - removed some obsolete parameters to functions (code cleanup)
   - adjusted documentation
   - changed version number scheme, and included metadata information in binary files
+
+2.1.1 - May 21, 2010
+  - bugfix for negative (airport/tower) altitudes: were treated as unsigned before,
+    resulting in an extremely high tower position
 */
 
 #include <windows.h>
@@ -203,7 +207,7 @@ int buildDatabase();
 int parseAirportsInBglFile(LPSTR bglFile);
 int parseAirportsInBglFileMap(HANDLE hFile, LPSTR bglFile);
 void dumpAirportInfo(AirportInfo *airport, int debugLevel);
-double convertAltitude(DWORD dword);
+double convertAltitude(signed long dword);
 double convertLatitude(DWORD dword);
 double convertLongitude(DWORD dword);
 void convertIcao(DWORD code, char* output);
@@ -1746,7 +1750,7 @@ void convertIcao(DWORD code, char* output) {
 	}
 }
 
-double convertAltitude(DWORD dword) {
+double convertAltitude(signed long dword) {
 	return ((double)dword) / ((double)1000);
 }
 
