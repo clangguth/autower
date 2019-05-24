@@ -1,3 +1,17 @@
+/*
+    This file is part of autower, Copyright (C) Christoph Langguth
+
+    autower is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License, version 2,
+    as published by the Free Software Foundation.
+
+    autower is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License, version 2, for more details. A copy of
+    the license is included with this distribution (LICENSE.txt).
+*/
+
 #include "product.h"
 #include <winver.h>
 #ifdef USE_ICON
@@ -21,7 +35,7 @@ BEGIN
       VALUE "FileVersion", PRODUCT_VERSION
       VALUE "InternalName", PRODUCT
       VALUE "LegalCopyright", L"Christoph Langguth"
-      VALUE "License", L"GNU GPL - General Public License"
+      VALUE "License", L"GNU GPL - General Public License, version 2"
       VALUE "OriginalFilename", PRODUCT
       VALUE "ProductName", PRODUCT
       VALUE "ProductVersion", PRODUCT_VERSION

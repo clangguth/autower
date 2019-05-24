@@ -2,18 +2,14 @@
     This file is part of autower, Copyright (C) Christoph Langguth
 
     autower is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+    it under the terms of the GNU General Public License, version 2,
+    as published by the Free Software Foundation.
 
     autower is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with autower; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    GNU General Public License, version 2, for more details. A copy of
+    the license is included with this distribution (LICENSE.txt).
 */
 
 
@@ -43,8 +39,9 @@ void FSMessageBox(char* message, UINT type) {
 	FSAlert = getAddress("?FSAlert@@YGHPBDHW4FSAlertType@@@Z", "fsui.dll");
 	if (FSAlert != NULL && config->integratedUI) {
 		/* simulate a "title", avoiding to waste vertical space by intending horizontally */
-		strcpy(buf, "                ");
+		strcpy(buf, "             -- ");
 		strcat(buf, PRODUCT_FULL);
+		strcat(buf, " --");
 		switch (type) {
 		case MB_ICONINFORMATION:
 			type = 1;

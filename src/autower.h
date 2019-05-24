@@ -2,18 +2,14 @@
     This file is part of autower, Copyright (C) Christoph Langguth
 
     autower is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+    it under the terms of the GNU General Public License, version 2,
+    as published by the Free Software Foundation.
 
     autower is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with autower; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    GNU General Public License, version 2, for more details. A copy of
+    the license is included with this distribution (LICENSE.txt).
 */
 
 #ifndef AUTOWER_H_
@@ -33,8 +29,9 @@
 #define INIFILE_REL "autower.ini"
 
 // between version 2 and 3, there have actually not been any structural changes,
-// but the detection of what should go there has changed, so an update is required.
-#define DATFILE_VERSION 3
+// but the detection of what should be indexed has changed, so an update is required.
+// version 4 introduces new field towerFlags into AirportInfo.
+#define DATFILE_VERSION 4
 
 #define ICAOCODE = " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 #define RADIUS 3443.9
@@ -44,8 +41,15 @@
 #define TOWERPOS_SIMPLEFIX 1
 #define TOWERPOS_LAT_TWR 2
 #define TOWERPOS_LAT_AP 4
-#define TOWERPOS_LON_TWR 8
-#define TOWERPOS_LON_AP 16
+#define TOWERPOS_LAT_CFG 8
+#define TOWERPOS_LON_TWR 16
+#define TOWERPOS_LON_AP 32
+#define TOWERPOS_LON_CFG 64
+
+// since DATFILE_VERSION 4 (autower 2.3.0)
+#define TOWERPOS_OVERRIDE_ALT 1
+#define TOWERPOS_OVERRIDE_LATLON 2
+
 
 #pragma pack(1)
 typedef struct RunwayInfoBuildtime {
@@ -79,6 +83,8 @@ typedef struct AirportInfo {
 	DWORD towerLatitude;
 	DWORD towerAltitude;
 	float currentDistance;
+	char towerFlags; // since DATFILE_VERSION = 4;
+	char unused[3]; // since DATFILE_VERSION = 4;
 } AirportInfo, *PAirportInfo;
 
 typedef struct SceneryInfo {
@@ -119,13 +125,5 @@ struct KdNode
 KdTree treeInsertAirport( LatLon Item, AirportInfo* payload, KdTree T );
 void treeFindAirport( LatLon Low, LatLon High, KdTree T);
 void treeFindResultCallback(AirportInfo* nextResult);
-
-#pragma pack(1)
-typedef struct LatLonAlt {
-	long long latitude;
-	long long altitude;
-	long long longitude;
-} LatLonAlt;
-
 
 #endif /* AUTOWER_H_ */

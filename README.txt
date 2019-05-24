@@ -1,8 +1,8 @@
 
 
-          ===================================================
-          = autower 2.2 (C) Christoph Langguth, 2006 - 2011 =
-          ===================================================
+          =====================================================
+          = autower 2.3.0 (C) Christoph Langguth, 2006 - 2011 =
+          =====================================================
 
 
 This software is distributed under the terms of the GNU General Public
@@ -55,11 +55,12 @@ autower relies on the information that Flight Simulator provides about the
 airports. Since not all (actually only very few) airports include detailed
 information about the tower position (and others do not have a tower at all),
 in many cases autower has to make the best out of the few information that FS
-does provide. It will, for example, have to determine by itself the height of
+does provide. It may, for example, have to determine by itself the height of
 the tower, and in some cases it tries to adjust the position so that it does not
-sit on a runway. This may turn out not to be an ideal situation for every
+sit on a runway. This might turn out not to be an ideal situation for every
 airport out there -- however, I believe that it does a relatively good job, and
 if you're not satisfied, you can always tweak it by changing its configuration.
+Further information about modifying tower positions is provided below.
 
 
 
@@ -67,14 +68,9 @@ REQUIREMENTS
 ============
 
 * Microsoft Flight Simulator 2004. autower ONLY works with FS2004, older and
-  newer versions are NOT supported. By the way, I heard FSX has a similar
-  functionality built in.
+  newer versions are NOT supported.
   
-* FSUIPC >= 3.71 (unregistered is ok). autower will NOT work with unregistered
-  versions of FSUIPC prior to 3.71. It should work with decently new registered
-  versions, though. At the time of releasing version 2.0.0, the most recent
-  version proven to be compatible was 3.98, however newer versions should
-  normally work as well.
+* FSUIPC >= 3.71 (unregistered is ok).
 
 
 
@@ -86,13 +82,11 @@ For those of you in a hurry, here it goes:
 => EXPRESS INSTALLATION
 -----------------------
 
-	* copy autower.dll to your flight simulator \modules directory.
-	* run FS2004
-	* That's it.
+	* Copy autower.dll and autower.ini to your FS9 \modules directory.
+	* Run FS2004
 
 
-
-=> THOUGHTFUL INSTALLATION :-)
+=> RECOMMENDED INSTALLATION :-)
 ------------------------------
 
 As mentioned above, autower comes in two flavors: a stand-alone executable and a
@@ -113,14 +107,13 @@ it's not fun to click away thousands of message boxes... you have been warned ;-
 
 So, the recommended way is the following:
 
-Start the command-line application (while FS is running and ready to fly, i.e.,
-not paused in any menu or in the game itself) and change to tower view. Go to
-different airports and see if you like how it behaves. If it does, perfect --
+Start the command-line application while FS is running , and change to tower view.
+Go to different airports and see if you like how it behaves. If it does, perfect:
 just install the DLL and forget about the command-line version. If it doesn't,
 take a look at the autower.ini parameters (they're all thoroughly documented)
 and fiddle with them. This is where the executable version has its strength --
 just restart it after changing the configuration, and it will use the new
-settings. To achieve the same results with the DLL variant, you'd have to
+settings. To achieve the same results with the DLL variant, you would have to
 restart FS. Once you have found the settings you like, just copy the DLL along
 with your modified configuration file (autower.ini) to the FS9\modules folder.
 
@@ -143,7 +136,9 @@ A: For the executable variant, in the current working directory. For the DLL,
    in the FS9\modules folder (same folder that autower.dll resides in.)
 
 Q: Can I re-use the configuration/data files between the DLL and the exe?
-A: Of course! Just pay attention to the loglevel when using the DLL...
+A: Of course! A handful of advanced settings only apply to one or the other,
+   but they do not influence the actual functionality (and if you changed them,
+   you did read the comments in the .ini, didn't you?)
 
 Q: Can I run the DLL and the executable at the same time?
 A: This means: Can I run the executable while the DLL is loaded in Flight
@@ -169,13 +164,15 @@ A: If your scenery doesn't change and you have an up-to-date datafile, no
 
 Q: autower seems to do something wrong for a particular airport. Is there a way
    to find out why this is happening?
-A: Yes. You have to use the executable version for this. Start it, passing the
+A: Yes. You *have* to use the executable version for this. Start it, passing the
    ICAO code for the airport that you want to analyze as parameter, for example
    "autower lfsb". It will re-scan your scenery, and while doing so, will
-   display any information relevant to that airport. Note that some poorly
-   designed AFCADs may result in wrong information, but autower has no way to
-   detect that this is not intended and thus obeys it. However, this mechanism
-   should at least give you the possibility to identify faulty AFCADs.
+   display any information relevant to that airport. More information is available
+   on the homepage, topic "How do I use the debug mode?"
+
+Q: How do I change the tower location for a particular airport?
+A: Since version 2.3.0, you can define tower positions directly in autower.ini.
+   At the end of the file, you can find the extensive documentation and an example.
 
 Q: When I'm resetting a flight or have crashed, the tower goes back to some
    strange position. Can that be fixed?
@@ -309,8 +306,18 @@ NOTE: a more detailed version history is available in the source code distributi
 
 2.2.0 (Feb 26, 2011) - autower now also considers sceneries defined as remote, and
                        is less picky about being able to process scenery files.
-                     - changed the default log level
+                     - Changed the default log level
                      - Various other minor fixes & cleanups
+
+2.3.0 (Oct 30, 2011) - Updated code for parsing airport definitions, now ignoring
+                       closed runways. This fixes wrong calculations of runway
+                       numbers for about 500 airports.
+                     - Added the possibility to define tower positions for
+                       individual airports directly in autower.ini, as an alter-
+                       native to modify the AFCAD itself.
+                     - Overhauled documentation
+                     - Consolidated license information (was somewhat ambiguous
+                       before). autower is now licensed under the GPL v2 (only).
 
 
 ACKNOWLEDGEMENTS
@@ -338,5 +345,5 @@ discussions and testing -- you know who you are :-)
 
 
 -------------------------------------------------------------------------------
-Christoph Langguth <christoph@rosenkeller.org>, 2006 - 2010
-http://christoph.rosenkeller.org/fs/autower/
+Christoph Langguth <christoph@rosenkeller.org>
+https://christoph.rosenkeller.org/fs/autower/

@@ -20,6 +20,8 @@ if(CMAKE_ARTIFACT_TYPE MATCHES EXE)
             src/bgl.h
             src/config.c
             src/config.h
+            src/coords.c
+            src/coords.h
             src/display.c
             src/display.h
             src/FSUIPC_User.h
@@ -69,6 +71,8 @@ elseif(CMAKE_ARTIFACT_TYPE MATCHES DLL)
             src/bgl.h
             src/config.c
             src/config.h
+            src/coords.c
+            src/coords.h
             src/display.c
             src/display.h
             src/FSUIPC_User.h

@@ -12,15 +12,17 @@
     the license is included with this distribution (LICENSE.txt).
 */
 
-#ifndef PROGRESSWINDOW_H_
-#define PROGRESSWINDOW_H_
+#ifndef COORDS_H_
+#define COORDS_H_
 
-#include <windows.h>
-void progressCreateWindow();
-void progressSetTotalLayersCount(int layersCount);
-void progressLayerDone();
-void progressFinalize();
-void progressIncrementFileCount(int inc);
-void progressIncrementAirportCount(int inc);
+#include "autower.h"
+#include "config.h"
 
-#endif /* PROGRESSWINDOW_H_ */
+double decodeAltitude(signed long dword);
+DWORD encodeAltitude(double d);
+double decodeLongitude(DWORD dword);
+double decodeLatitude(DWORD dword);
+
+void overrideCoordinates(AirportInfo* airport, Configuration* config, char* iniFile);
+
+#endif /* COORDS_H_ */

@@ -1,19 +1,15 @@
 /*
-    This file is part of autower, Copyright (C) Christoph Langguth, 2006 - 2010
+    This file is part of autower, Copyright (C) Christoph Langguth
 
     autower is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+    it under the terms of the GNU General Public License, version 2,
+    as published by the Free Software Foundation.
 
     autower is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with autower; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    GNU General Public License, version 2, for more details. A copy of
+    the license is included with this distribution (LICENSE.txt).
 */
 
 
@@ -119,7 +115,16 @@ Version history
     - these changes, together with the change to the default log/display level, should make
       startup more smooth in normal scenarios -- at the expense of users not knowing that there
       might be a problem in their configuration.
-  - various refactorings.
+ 	 - various refactorings.
+
+2.3.0 - Oct 30, 2011:
+	- ignoring runways which are closed both on primary and secondary headings (as FS itself does).
+	- allow to override airport/tower name, lat/lon, and alt in the configuration by
+	  creating the corresponding sections.
+	- documentation/source comments cleanup and additions
+	- license clarification: previous versions were ambiguous about which version applies;
+	  from now on, it should be clear that GPLv2 only is in effect.
+
 */
 
 #include <windows.h>
@@ -136,6 +141,7 @@ Version history
 #include "md5Usage.h"
 #include "config.h"
 #include "icaolist.h"
+#include "coords.h"
 
 /*  This stuff is required for building the DLL only.
 	Pass the -DBUILD_DLL option to the compiler.
@@ -231,9 +237,9 @@ int buildDatabase();
 int parseAirportsInBglFile(LPSTR bglFile);
 int parseAirportsInBglFileMap(HANDLE hFile, LPSTR bglFile);
 void dumpAirportInfo(AirportInfo *airport, int debugLevel);
-double convertAltitude(signed long dword);
-double convertLatitude(DWORD dword);
-double convertLongitude(DWORD dword);
+double decodeAltitude(signed long dword);
+double decodeLatitude(DWORD dword);
+double decodeLongitude(DWORD dword);
 void convertIcao(DWORD code, char* output);
 float printableCom(DWORD encoded);
 int calculateTowerPosition(double* lon, double* lat);
@@ -317,14 +323,18 @@ void decodeAndDisplayTowerPositionFlags(unsigned int debuglevel, int towerPositi
 	strcpy(buf, "\tTower coordinates: lat from ");
 	if (towerPositionFlags & TOWERPOS_LAT_AP) {
 		strcat(buf, "airport");
-	} else {
+	} else if (towerPositionFlags & TOWERPOS_LAT_TWR){
 		strcat(buf, "tower");
+	} else {
+		strcat(buf, "config");
 	}
 	strcat(buf, ", lon from ");
 	if (towerPositionFlags & TOWERPOS_LON_AP) {
 		strcat(buf, "airport");
-	} else {
+	} else if (towerPositionFlags & TOWERPOS_LON_AP){
 		strcat(buf, "tower");
+	} else {
+		strcat(buf, "config");
 	}
 	if (towerPositionFlags & TOWERPOS_SIMPLEFIX) {
 		strcat(buf, " + simple fix");
@@ -355,15 +365,15 @@ void debugAirport(char* bglFile, AirportInfo* airport) {
 	}
 	display(DISPLAY_ALWAYS, "\tNumber of runways: %d", count);
 
-	double alt = convertAltitude(airport->altitude);
-	double lon = convertLongitude(airport->longitude);
-	double lat = convertLatitude(airport->latitude);
+	double alt = decodeAltitude(airport->altitude);
+	double lon = decodeLongitude(airport->longitude);
+	double lat = decodeLatitude(airport->latitude);
 	display(DISPLAY_ALWAYS, "\tAirport location (lat,lon,alt): (%f, %f, %f)", lat, lon, alt);
 
 	if (!final) {
-		lon = convertLongitude(airport->towerLongitude);
-		lat = convertLatitude(airport->towerLatitude);
-		alt = convertAltitude(airport->towerAltitude);
+		lon = decodeLongitude(airport->towerLongitude);
+		lat = decodeLatitude(airport->towerLatitude);
+		alt = decodeAltitude(airport->towerAltitude);
 		display(DISPLAY_ALWAYS, "\t  Tower location (lat,lon,alt): (%f, %f, %f)", lat, lon, alt);
 	} else {
 		currentAirport = airport;
@@ -371,7 +381,10 @@ void debugAirport(char* bglFile, AirportInfo* airport) {
 		alt = calculateTowerAltitude();
 		display(DISPLAY_ALWAYS, "\t  Tower location (lat,lon,alt): (%f, %f, %f)", lat, lon, alt);
 		char buf[256];
-		if (convertAltitude(airport->towerAltitude) == 0) {
+		if ((airport->towerFlags & TOWERPOS_OVERRIDE_ALT) == TOWERPOS_OVERRIDE_ALT) {
+			strcpy(buf, "overridden in configuration");
+		}
+		else if (decodeAltitude(airport->towerAltitude) == 0) {
 			int runways = airport->runways;
 			if (runways < 1) runways = 1;
 			else if (runways > 6) runways = 6;
@@ -420,8 +433,8 @@ void treeFindResultCallback(AirportInfo* nextResult) {
 	nextResult->currentDistance = getDistance(
 		currentLatitude,
 		currentLongitude,
-		convertLatitude(nextResult->latitude),
-		convertLongitude(nextResult->longitude));
+		decodeLatitude(nextResult->latitude),
+		decodeLongitude(nextResult->longitude));
 	//dumpAirportInfo(nextResult);
 }
 
@@ -538,7 +551,7 @@ void mergeTowerInfos(AirportInfo* lower, AirportInfo* higher) {
 	dumpAirportInfo(lower, debugLevel);
 	display(debugLevel, "New (higher layer):");
 	dumpAirportInfo(higher, debugLevel);
-	if (higher->towerLatitude != 0 && convertLatitude(higher->towerLatitude) != 0) {
+	if (higher->towerLatitude != 0 && decodeLatitude(higher->towerLatitude) != 0) {
 		overridden = TRUE;
 		display(debugLevel, "merge overrides tower position");
 		lower->towerAltitude = higher->towerAltitude;
@@ -552,11 +565,29 @@ void mergeTowerInfos(AirportInfo* lower, AirportInfo* higher) {
 	}
 }
 
+void fixupAirport(AirportInfo* airport) {
+	if (configContainsICAOSection(config, airport->icao)) {
+		display(DISPLAY_DETAIL, "Found custom configuration for %s", airport->icao);
+		char name[AIRPORT_NAME_SIZE];
+		GetPrivateProfileStringA(airport->icao, KEY_ICAO_NAME, NULL, name, AIRPORT_NAME_SIZE, iniFile);
+		if (name[0]) {
+			display(DISPLAY_DETAIL, "Changed name for %s: %s -> %s", airport->icao, airport->name, name);
+			strcpy(airport->name, name);
+		}
+		if (!strcmpi(airport->icao, "TNCM")) {
+			display(DISPLAY_ALWAYS, "LAT: %08lX -> %f", airport->latitude, decodeLatitude(airport->latitude));
+			display(DISPLAY_ALWAYS, "LON: %08lX -> %f", airport->longitude, decodeLongitude(airport->longitude));
+			display(DISPLAY_ALWAYS, "ALT: %08lX -> %f", airport->altitude, decodeAltitude(airport->altitude));
+		}
+		overrideCoordinates(airport, config, iniFile);
+	}
+}
+
 BOOL insertAirportInKdTree(AirportInfo *airport, int debugLevel) {
-	
+
 	LatLon location;
-	location[0] = convertLatitude(airport->latitude);
-	location[1] = convertLongitude(airport->longitude);
+	location[0] = decodeLatitude(airport->latitude);
+	location[1] = decodeLongitude(airport->longitude);
 
 	dumpAirportInfo(airport, debugLevel);
 	airportsTree = treeInsertAirport(location, airport, airportsTree);
@@ -645,6 +676,7 @@ int readDatabase() {
 	
 	for (i = 0; i < count; i++) {
 		insertAirportInKdTree(&(airports[i]), DISPLAY_DEBUG);
+		fixupAirport(&(airports[i]));
 	}
 end:
 	CloseHandle(hDataFile);
@@ -800,22 +832,22 @@ void applySimplePositionFix(double* lon, double *lat) {
 }
 
 double calculateTowerAltitude() {
-	double alt = convertAltitude(currentAirport->towerAltitude);
-	if (alt == 0.0) {
+	double alt = decodeAltitude(currentAirport->towerAltitude);
+	if (((currentAirport->towerFlags & TOWERPOS_OVERRIDE_ALT) != TOWERPOS_OVERRIDE_ALT) && alt == 0.0) {
 		switch (currentAirport->runways) {
 		case 0:
 		case 1:
-			alt = convertAltitude(currentAirport->altitude) + config->towerAlt1Rw; break;
+			alt = decodeAltitude(currentAirport->altitude) + config->towerAlt1Rw; break;
 		case 2:
-			alt = convertAltitude(currentAirport->altitude) + config->towerAlt2Rw; break;
+			alt = decodeAltitude(currentAirport->altitude) + config->towerAlt2Rw; break;
 		case 3:
-			alt = convertAltitude(currentAirport->altitude) + config->towerAlt3Rw; break;
+			alt = decodeAltitude(currentAirport->altitude) + config->towerAlt3Rw; break;
 		case 4:
-			alt = convertAltitude(currentAirport->altitude) + config->towerAlt4Rw; break;
+			alt = decodeAltitude(currentAirport->altitude) + config->towerAlt4Rw; break;
 		case 5:
-			alt = convertAltitude(currentAirport->altitude) + config->towerAlt5Rw; break;
+			alt = decodeAltitude(currentAirport->altitude) + config->towerAlt5Rw; break;
 		default:
-			alt = convertAltitude(currentAirport->altitude) + config->towerAlt6Rw; break;
+			alt = decodeAltitude(currentAirport->altitude) + config->towerAlt6Rw; break;
 		}
 	}
 	return alt;
@@ -841,24 +873,32 @@ BOOL ipcSetTowerTo(double lat, double lon, double alt, BOOL setZoom) {
 
 int calculateTowerPosition(double* lon, double* lat) {
 	int flags = 0;
-	*lat = convertLatitude(currentAirport->towerLatitude);
-	if (*lat == 0.0) {
-		*lat = convertLatitude(currentAirport->latitude);
+	*lat = decodeLatitude(currentAirport->towerLatitude);
+	if ((currentAirport->towerFlags & TOWERPOS_OVERRIDE_LATLON) != 0) {
+		flags |= TOWERPOS_LAT_CFG;
+	}
+	else if (*lat == 0.0) {
+		*lat = decodeLatitude(currentAirport->latitude);
 		flags |= TOWERPOS_LAT_AP;
 	} else {
 		flags |= TOWERPOS_LAT_TWR;
 	}
-	*lon = convertLongitude(currentAirport->towerLongitude);
-	if (*lon == 0.0) {
-		*lon = convertLongitude(currentAirport->longitude);
+	*lon = decodeLongitude(currentAirport->towerLongitude);
+	if ((currentAirport->towerFlags & TOWERPOS_OVERRIDE_LATLON) != 0) {
+		flags |= TOWERPOS_LON_CFG;
+	}
+	else if (*lon == 0.0) {
+		*lon = decodeLongitude(currentAirport->longitude);
 		flags |= TOWERPOS_LON_AP;
 	} else {
 		flags |= TOWERPOS_LON_TWR;
 	}
 
-	if (currentAirport->runways == 1 && currentAirport->runwayInfo.singleRunwayInfo != 0) {
-		applySimplePositionFix(lon, lat);
-		flags |= TOWERPOS_SIMPLEFIX;
+	if ((currentAirport->towerFlags & TOWERPOS_OVERRIDE_LATLON) == 0) {
+		if (currentAirport->runways == 1 && currentAirport->runwayInfo.singleRunwayInfo != 0) {
+			applySimplePositionFix(lon, lat);
+			flags |= TOWERPOS_SIMPLEFIX;
+		}
 	}
 	return flags;
 }
@@ -889,6 +929,10 @@ void airportChanged(BOOL reallyChanged) {
 /* This method signature is used because it's instantiated via CreateThread() for the DLL. */
 DWORD WINAPI mainLoop(LPVOID unused) {
 	unsigned int progress = config->updateInterval;
+
+	// reset to NULL because debug functions at build time use this as well
+	currentAirport = NULL;
+
 	for (; !stopRequested; Sleep(MAINLOOP_SLEEP_INTERVAL)) {
 		progress += MAINLOOP_SLEEP_INTERVAL;
 		if (progress >= config->updateInterval) {
@@ -1220,6 +1264,7 @@ int setupAirports() {
 			if (loadedAirports != 0) {
 				display(DISPLAY_DETAIL, "Successfully loaded %i airport infos from database.", loadedAirports);
 				freeSceneryInfo();
+				configFreeSections(config);
 				return loadedAirports;
 			}
 		}
@@ -1227,6 +1272,7 @@ int setupAirports() {
 
 	loadedAirports = buildDatabase();
 	freeSceneryInfo();
+	configFreeSections(config);
 
 	if (loadedAirports != 0) {
 		display(DISPLAY_DETAIL, "Successfully imported %i airport infos from scenery.", loadedAirports);
@@ -1252,6 +1298,9 @@ DWORD WINAPI commonMain() {
 	CreateThread(NULL,0, &mainLoop, NULL, 0, &thread);
 #else
 	SetConsoleCtrlHandler(consoleHandler, TRUE);
+	printf("\r\n=============================================================\r\n");
+	printf("= autower is running in console mode. Press Ctrl-C to exit. =\r\n");
+	printf("=============================================================\r\n\r\n");
 	mainLoop(0);
 	FSUIPC_Close();
 #endif
@@ -1316,12 +1365,12 @@ void writeDatabaseHeaderAndClose(int airports) {
 }
 
 float extractSingleRunwayInfo(AirportInfo* airport, RunwayInfoBuildtime* runway) {
-	float apLon = convertLongitude(airport->towerLongitude);
-	float apLat = convertLatitude(airport->towerLatitude);
-	if (apLon == 0) apLon = convertLongitude(airport->longitude);
-	if (apLat == 0) apLat = convertLatitude(airport->latitude);
-	float lonDiff = convertLongitude(runway->longitude) - apLon;
-	float latDiff = convertLatitude(runway->latitude) -apLat;
+	float apLon = decodeLongitude(airport->towerLongitude);
+	float apLat = decodeLatitude(airport->towerLatitude);
+	if (apLon == 0) apLon = decodeLongitude(airport->longitude);
+	if (apLat == 0) apLat = decodeLatitude(airport->latitude);
+	float lonDiff = decodeLongitude(runway->longitude) - apLon;
+	float latDiff = decodeLatitude(runway->latitude) -apLat;
 	if (lonDiff < 0) lonDiff = -lonDiff;
 	if (latDiff < 0) latDiff = -latDiff;
 
@@ -1330,7 +1379,7 @@ float extractSingleRunwayInfo(AirportInfo* airport, RunwayInfoBuildtime* runway)
 		float rwyInfo = (((int)runway->length)*10) + DEGREE_TO_RADIAN(runway->heading);
 		//airport->singleRwyInfo = rwyInfo;
 		display(DISPLAY_DEBUG, "Single Rwy Info: (%f,%f), len %f m, hdg %f -> combined %f",
-			convertLatitude(runway->latitude), convertLongitude(runway->longitude),
+			decodeLatitude(runway->latitude), decodeLongitude(runway->longitude),
 			runway->length, runway->heading, rwyInfo);
 		return rwyInfo;
 	}
@@ -1363,6 +1412,7 @@ void freeIcaoListAndWrite() {
 		convertRunwayInfoFromBuildToRuntime(airport);
 		if (hDataFile != INVALID_HANDLE_VALUE)
 			WriteFile(hDataFile,airport,sizeof(AirportInfo),&dummy,NULL);
+		fixupAirport(airport);
 		debugAirport(NULL, airport);
 	}
 	freeIcaoList();
@@ -1584,11 +1634,34 @@ void parseDeleteSubrecord(LPVOID subrecord, AirportInfo* airport) {
 	}
 }
 
+char convertRunwayDesignator(BYTE binary) {
+	switch (binary) {
+	case 1: return 'L';
+	case 2: return 'R';
+	case 3: return 'C';
+	case 4: return 'W';
+	default: return ' ';
+	}
+}
+
 void parseRunwaySubrecord(LPVOID subrecord, AirportInfo* airport) {
 	BglRunwaySubrecord* runway = subrecord;
-	display(DISPLAY_DEBUG, "Found runway at (%f,%f), heading %f, length %f meters at %s",
-		convertLatitude(runway->latitude), convertLongitude(runway->longitude), runway->heading, runway->length, airport->icao
+	BOOL closed = (runway->markingFlags & RUNWAY_FLAG_PRIMARY_CLOSED) == RUNWAY_FLAG_PRIMARY_CLOSED;
+	closed &= (runway->markingFlags & RUNWAY_FLAG_SECONDARY_CLOSED) == RUNWAY_FLAG_SECONDARY_CLOSED;
+
+	display(DISPLAY_DEBUG, "Found%s runway %d%c/%d%c at (%f,%f), heading %f, length %f meters at %s",
+		closed ? " CLOSED" : "",
+		runway->primaryNumber, convertRunwayDesignator(runway->primaryDesignator),
+		runway->secondaryNumber, convertRunwayDesignator(runway->secondaryDesignator),
+		decodeLatitude(runway->latitude), decodeLongitude(runway->longitude), runway->heading, runway->length, airport->icao
 	);
+	/* Info: with the stock FS9 airports, this ignores roughly 500 runways. */
+	if (closed) {
+		display (DISPLAY_DETAIL, "runway %d%c at %s ignored because it's closed in both directions.",
+				runway->primaryNumber, convertRunwayDesignator(runway->primaryDesignator), airport->icao
+		);
+		return;
+	}
 	RunwayInfoBuildtime* out = malloc(sizeof(struct RunwayInfoBuildtime));
 	out->surface = runway->surface & 0xFF;
 	out->primaryNumber = runway->primaryNumber;
@@ -1627,7 +1700,7 @@ void parseSubrecords(char* bglFile, LPVOID base, BglAirportRecord* input, Airpor
 	DWORD limit = (DWORD)input + input->header.size;
 	while (offset < limit) {
 		BglRecordHeader* header = (BglRecordHeader*) offset;
-		display(DISPLAY_DETAIL, "airport subrecord at offset %08X is of type %04X, size %d",
+		display(DISPLAY_DEBUG, "airport subrecord at offset %08X is of type %04X, size %d",
 				offset - (DWORD)base, header->type, header->size);
 		parseSubrecord(bglFile, base, header, output, deleteStage);
 		offset += header->size;
@@ -1661,14 +1734,14 @@ int parseAirportRecord(char* bglFile, LPVOID base, DWORD offset) {
 	BglAirportRecord* record = base + offset;
 	AirportInfo* airport = createBasicAirportInfoFromBglRecord(record);
 
-	if (airport->towerAltitude != 0 && convertAltitude(airport->towerAltitude) <= -1000) {
+	if (airport->towerAltitude != 0 && decodeAltitude(airport->towerAltitude) <= -1000) {
 		debugAirport(bglFile, airport);
 		int level = DISPLAY_DETAIL;
 		if (isDebuggedAirport(airport)) {
 			level = DISPLAY_ALWAYS;
 		}
 		display(level, "%s IGNORED because tower altitude %f <= -1000 m ASL",
-				airport->icao, convertAltitude(airport->towerAltitude));
+				airport->icao, decodeAltitude(airport->towerAltitude));
 		free(airport);
 		return 0;
 	}
@@ -1691,6 +1764,7 @@ int parseAirportRecord(char* bglFile, LPVOID base, DWORD offset) {
 	parseSubrecords(bglFile, base, record, airport, FALSE);
 
 	debugAirport(bglFile, airport);
+
 	if (!isOverriding) {
 		insertAirportInKdTree(airport, DISPLAY_DETAIL);
 		insertAirportInIcaoList(airport);
@@ -1804,31 +1878,18 @@ void convertIcao(DWORD code, char* output) {
 	}
 }
 
-double convertAltitude(signed long dword) {
-	return ((double)dword) / ((double)1000);
-}
-
-double convertLongitude(DWORD dword) {
-	return ((double) dword) * (360.0 / (3* 0x10000000)) - 180.0;
-}
-
-double convertLatitude(DWORD dword) {
-	//printf("CONVERT: %lx -> %f", dword, 90.0 - ((double)dword) * (180.0 / (2* 0x10000000)));
-	return 90.0 - ((double)dword) * (180.0 / (2* 0x10000000));
-}
-
 void dumpAirportInfo(AirportInfo *airport, int debugLevel) {
 	if (airport == NULL) {
 		display(debugLevel, "airport == NULL");
 		return;
 	}
-	double alt = convertAltitude(airport->altitude);
-	double lon = convertLongitude(airport->longitude);
-	double lat = convertLatitude(airport->latitude);
+	double lat = decodeLatitude(airport->latitude);
+	double lon = decodeLongitude(airport->longitude);
+	double alt = decodeAltitude(airport->altitude);
 
-	double talt = convertAltitude(airport->towerAltitude);
-	double tlon = convertLongitude(airport->towerLongitude);
-	double tlat = convertLatitude(airport->towerLatitude);
+	double tlat = decodeLatitude(airport->towerLatitude);
+	double tlon = decodeLongitude(airport->towerLongitude);
+	double talt = decodeAltitude(airport->towerAltitude);
 
 	display(debugLevel, "%s\t%s: AP @(%f, %f, %f), %d rwys (%s); TWR @(%f, %f, %f) COM @ {%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f} dst %f nm",
 		airport->icao,
