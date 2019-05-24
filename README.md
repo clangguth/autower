@@ -7,8 +7,9 @@ This is the source code of autower.
 autower is a plugin for Microsoft Flight Simulator 2004 (FS9)
 which automatically sets the tower location to the closest airport.
 
-
 The "official" homepage for autower is [here](https://christoph.rosenkeller.org/fs/autower).
+
+And here is the more extensive [README.txt](README.txt)
 
 ### What gives?
 
