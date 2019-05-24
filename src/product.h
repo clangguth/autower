@@ -1,5 +1,5 @@
 /*
-    This file is part of autower, Copyright (C) Christoph Langguth, 2006 - 2010
+    This file is part of autower, Copyright (C) Christoph Langguth
 
     autower is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,23 +16,12 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef DISPLAY_H_
-#define DISPLAY_H_
-#include "product.h"
 
-#define WINDOW_TITLE PRODUCT " " PRODUCT_VERSION
+#ifndef PRODUCT_H_
+#define PRODUCT_H_
 
-#define DISPLAY_DEBUG 5
-#define DISPLAY_DETAIL 4
-#define DISPLAY_INFO 3
-#define DISPLAY_WARN 2
-#define DISPLAY_ERROR 1
-#define DISPLAY_FATAL 0
+#define PRODUCT "autower"
+#define PRODUCT_VERSION "2.1.0"
+#define PRODUCT_VERSION_BIN 2, 1, 0, 0
 
-#include <windows.h>
-
-void setDisplayLevel(int level);
-void display(int level, const char *fmt, ...);
-LPVOID getFormattedErrorMessage();
-
-#endif /* DISPLAY_H_ */
+#endif /* PRODUCT_H_ */

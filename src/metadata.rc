@@ -1,0 +1,36 @@
+#include "product.h"
+#include <winver.h>
+#ifdef USE_ICON
+101 ICON autower.ico
+#endif
+
+LANGUAGE 0, 0
+1 VERSIONINFO
+ FILEVERSION PRODUCT_VERSION_BIN
+ PRODUCTVERSION PRODUCT_VERSION_BIN
+ FILEFLAGSMASK 0x3f
+ FILEOS VOS_NT_WINDOWS32
+ FILETYPE 0x2
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904E4"
+    BEGIN
+      VALUE "CompanyName", "Christoph Langguth"
+      VALUE "FileDescription", "Automatic tower position for FS2004"
+      VALUE "FileVersion", PRODUCT_VERSION
+      VALUE "InternalName", PRODUCT
+      VALUE "LegalCopyright", L"Christoph Langguth"
+//      VALUE "LegalCopyright", L"Copyright \251 2006-2010 Christoph Langguth"
+      VALUE "License", L"GNU GPL - General Public License"
+      VALUE "OriginalFilename", PRODUCT
+      VALUE "ProductName", PRODUCT
+      VALUE "ProductVersion", PRODUCT_VERSION
+      VALUE "URL", "https://christoph.rosenkeller.org/fs/autower/"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1252
+  END
+END

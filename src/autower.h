@@ -1,5 +1,5 @@
 /*
-    This file is part of autower, Copyright (C) Christoph Langguth, 2006 - 2010
+    This file is part of autower, Copyright (C) Christoph Langguth
 
     autower is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 
 #include <windows.h>
 #include "md5Usage.h"
+#include "product.h"
 
 #define AIRPORT_NAME_SIZE 32
 #define AIRPORT_COM_SIZE 8

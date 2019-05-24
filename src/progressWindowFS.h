@@ -16,23 +16,14 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef DISPLAY_H_
-#define DISPLAY_H_
-#include "product.h"
+#ifndef PROGRESSWINDOWFS_H_
+#define PROGRESSWINDOWFS_H_
 
-#define WINDOW_TITLE PRODUCT " " PRODUCT_VERSION
+void progressCreateWindowFS();
+void progressSetTotalLayersCountFS(int layersCount);
+void progressLayerDoneFS();
+void progressFinalizeFS();
+void progressIncrementFileCountFS(int inc);
+void progressIncrementAirportCountFS(int inc);
 
-#define DISPLAY_DEBUG 5
-#define DISPLAY_DETAIL 4
-#define DISPLAY_INFO 3
-#define DISPLAY_WARN 2
-#define DISPLAY_ERROR 1
-#define DISPLAY_FATAL 0
-
-#include <windows.h>
-
-void setDisplayLevel(int level);
-void display(int level, const char *fmt, ...);
-LPVOID getFormattedErrorMessage();
-
-#endif /* DISPLAY_H_ */
+#endif /* PROGRESSWINDOW_H_ */

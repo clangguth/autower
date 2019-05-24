@@ -41,6 +41,8 @@ Configuration* configInitialize() {
 	config->displayDuration = DEFAULT_DISPLAYDURATION;
 	config->alwaysSetTower = DEFAULT_ALWAYSSETTOWER;
 	config->forceFsPathToUNC = DEFAULT_FORCEFSPATHTOUNC;
+	config->integratedUI = DEFAULT_INTEGRATEDUI;
+	config->progressDisplayDelay = DEFAULT_PROGRESSDISPLAYDELAY;
 
 	setDisplayLevel(config->displayLevel);
 	return config;
@@ -64,13 +66,31 @@ void configRead(Configuration* config, char* iniFile) {
     config->simpleFixDistance = GetPrivateProfileInt(INI_SECTIONKEY,KEY_SIMPLEFIXDISTANCE,config->simpleFixDistance,iniFile);
     config->alwaysSetTower = GetPrivateProfileInt(INI_SECTIONKEY,KEY_ALWAYSSETTOWER,config->alwaysSetTower,iniFile);
     config->forceFsPathToUNC = GetPrivateProfileInt(INI_SECTIONKEY,KEY_FORCEFSPATHTOUNC,config->forceFsPathToUNC,iniFile);
+    config->integratedUI = GetPrivateProfileInt(INI_SECTIONKEY,KEY_INTEGRATEDUI,config->integratedUI,iniFile);
+    config->progressDisplayDelay = GetPrivateProfileInt(INI_SECTIONKEY,KEY_PROGRESSDISPLAYDELAY,config->progressDisplayDelay,iniFile);
+
 
 	setDisplayLevel(config->displayLevel);
 
-	display(DISPLAY_DETAIL, "Configuration dump:\r\nlogLevel=%u\r\ndisplayDuration=%d\r\nmaxDisplayInfoAltitude=%ld\r\ntowerMinCandidates=%u\r\ncomLockThreshold=%u\r\nzoomLevel=%u\r\nupdateInterval=%u\r\ntowerAlt1Rw=%u\r\ntowerAlt2Rw=%u\r\ntowerAlt3Rw=%u\r\ntowerAlt4Rw=%u\r\ntowerAlt5Rw=%u\r\ntowerAlt6Rw=%u\r\nsimpleFixHeading=%u\r\nsimpleFixDistance=%d\r\nalwaysSetTower=%d\r\nforceFsPathToUNC=%d\r\n",
+	display(DISPLAY_DETAIL, "Configuration dump:\r\n"
+			"logLevel=%u\r\n"
+			"displayDuration=%d\r\n"
+			"maxDisplayInfoAltitude=%ld\r\n"
+			"towerMinCandidates=%u\r\n"
+			"comLockThreshold=%u\r\n"
+			"zoomLevel=%u\r\n"
+			"updateInterval=%u\r\n"
+			"towerAlt1Rw=%u\r\ntowerAlt2Rw=%u\r\ntowerAlt3Rw=%u\r\ntowerAlt4Rw=%u\r\ntowerAlt5Rw=%u\r\ntowerAlt6Rw=%u\r\n"
+			"simpleFixHeading=%u\r\n"
+			"simpleFixDistance=%d\r\n"
+			"alwaysSetTower=%d\r\n"
+			"forceFsPathToUNC=%u\r\n"
+			"integratedUI=%u\r\n"
+			"progressDisplayDelay=%u\r\n",
 			config->displayLevel, config->displayDuration, config->maxDisplayInfoAltitude, config->towerMinCandidates,
 			config->comLockThreshold, config->zoomLevel, config->updateInterval,
 			config->towerAlt1Rw, config->towerAlt2Rw, config->towerAlt3Rw, config->towerAlt4Rw, config->towerAlt5Rw, config->towerAlt6Rw,
-			config->simpleFixHeading, config->simpleFixDistance, config->alwaysSetTower, config->forceFsPathToUNC
+			config->simpleFixHeading, config->simpleFixDistance, config->alwaysSetTower, config->forceFsPathToUNC,
+			config->integratedUI, config->progressDisplayDelay
 	);
 }

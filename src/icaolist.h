@@ -16,23 +16,15 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef DISPLAY_H_
-#define DISPLAY_H_
-#include "product.h"
 
-#define WINDOW_TITLE PRODUCT " " PRODUCT_VERSION
+#ifndef ICAOLIST_H_
+#define ICAOLIST_H_
+#include "autower.h"
 
-#define DISPLAY_DEBUG 5
-#define DISPLAY_DETAIL 4
-#define DISPLAY_INFO 3
-#define DISPLAY_WARN 2
-#define DISPLAY_ERROR 1
-#define DISPLAY_FATAL 0
+AirportInfo* findAirportInIcaoList(char* icao);
+void insertAirportInIcaoList(AirportInfo* airport);
+unsigned int getIcaoListSize();
+AirportInfo* getAirportInIcaoList(int position);
+void freeIcaoList();
 
-#include <windows.h>
-
-void setDisplayLevel(int level);
-void display(int level, const char *fmt, ...);
-LPVOID getFormattedErrorMessage();
-
-#endif /* DISPLAY_H_ */
+#endif /* ICAOTREE_H_ */

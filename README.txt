@@ -1,7 +1,7 @@
 
 
           ===================================================
-          = autower 2.0 (C) Christoph Langguth, 2006 - 2010 =
+          = autower 2.1 (C) Christoph Langguth, 2006 - 2010 =
           ===================================================
 
 
@@ -16,7 +16,7 @@ INTRODUCTION
 
 Have you ever been annoyed by the fact that when you want to see this perfect
 touchdown you just made from an outside perspective, the tower is anywhere
-but where you want it to be? Got frustrated by trying to get the tower where
+but where it should be? Got frustrated by trying to get the tower where
 you think it is in reality, or at least somewhere where it fits well?
 
 If the answer is yes, then take a look at autower. Designed to operate in
@@ -51,12 +51,7 @@ defaults, of course.)
 KNOWN ISSUES AND LIMITATIONS
 ============================
 
-* If FS is started in full screen mode when autower rebuilds its datafile,
-the flight simulator window temporarily loses focus and the desktop is displayed.
-It should be restored after autower finished building the datafile. If it's not,
-just click (possibly twice) on the FS task menu entry and you will return to FS.
-
-* autower relies on the information that Flight Simulator provides about the
+autower relies on the information that Flight Simulator provides about the
 airports. Since not all (actually only very few) airports include detailed
 information about the tower position (and others do not have a tower at all),
 in many cases autower has to make the best out of the few information that FS
@@ -182,6 +177,15 @@ A: Yes. You have to use the executable version for this. Start it, passing the
    detect that this is not intended and thus obeys it. However, this mechanism
    should at least give you the possibility to identify faulty AFCADs.
 
+Q: When I'm resetting a flight or have crashed, the tower goes back to some
+   strange position. Can that be fixed?
+A: Yes, but it comes at a price. You can use the AlwaysSetTower setting in the
+   configuration to fix this problem. The price that you'll have to pay though
+   is that you won't be able to manually reposition the tower. This tradeoff may
+   be annoying (or it may not be, because you never even thought about manually
+   changing the tower position), but I haven't found a reliable way yet to
+   determine why the tower position was changed.
+
 Q: I can't seem to find a configuration that I like - what should I do?
 Q: I'm missing feature xyz. What should I do?
 A: Hmmm. Although autower tries to make some intelligent decisions, it is of
@@ -285,6 +289,11 @@ VERSION HISTORY
                       Aerosoft German Airports 3 X - Paderborn-Lippstadt EDLP
                       Exclude BGL; ignoring such sections does not seem to
                       have other side effects.
+
+2.1.0 (May 15, 2010) - The most important change is the UI integration of the
+                       DLL variant with FS. Other changes include some modifi-
+                       cations of the default configuration and new configura-
+                       tion options, and a minimal performance optimization.
 
 
 ACKNOWLEDGEMENTS

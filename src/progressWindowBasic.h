@@ -16,15 +16,15 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#ifndef PROGRESSWINDOWBASIC_H_
+#define PROGRESSWINDOWBASIC_H_
 
-#ifndef ICAOTREE_H_
-#define ICAOTREE_H_
-#include "autower.h"
+#include <windows.h>
+void progressCreateWindowBasic();
+void progressSetTotalLayersCountBasic(int layersCount);
+void progressLayerDoneBasic();
+void progressFinalizeBasic();
+void progressIncrementFileCountBasic(int inc);
+void progressIncrementAirportCountBasic(int inc);
 
-AirportInfo* findAirportInIcaoTree(char* icao);
-void insertAirportInIcaoTree(AirportInfo* airport);
-unsigned int getIcaoTreeSize();
-AirportInfo* getAirportInIcaoTree(int position);
-void freeIcaoTree();
-
-#endif /* ICAOTREE_H_ */
+#endif /* PROGRESSWINDOW_H_ */

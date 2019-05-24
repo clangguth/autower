@@ -12,8 +12,9 @@ add_definitions(-D_ATT_SYNTAX)
 if(CMAKE_ARTIFACT_TYPE MATCHES EXE)
     message("Artifact will be: autower.exe")
 
+    add_definitions(-DUSE_ICON)
+
     add_executable(autower
-            icon.rc
             src/autower.c
             src/autower.h
             src/bgl.h
@@ -22,8 +23,13 @@ if(CMAKE_ARTIFACT_TYPE MATCHES EXE)
             src/display.c
             src/display.h
             src/FSUIPC_User.h
-            src/icaotree.c
-            src/icaotree.h
+            src/fsui.c
+            src/fsui.h
+            src/icaolist.c
+            src/icaolist.h
+            src/linkage.h
+            src/metadata.rc
+            src/product.h
             src/IPCuser.c
             src/IPCuser.h
             src/kdtree.c
@@ -35,7 +41,11 @@ if(CMAKE_ARTIFACT_TYPE MATCHES EXE)
             src/memmap.h
             src/progressWindow.c
             src/progressWindow.h
-    )
+            src/progressWindowBasic.c
+            src/progressWindowBasic.h
+            src/progressWindowFS.c
+            src/progressWindowFS.h
+            )
 
     if(CMAKE_BUILD_TYPE MATCHES MinSizeRel)
         if(EXISTS ../upx.exe)
@@ -62,8 +72,13 @@ elseif(CMAKE_ARTIFACT_TYPE MATCHES DLL)
             src/display.c
             src/display.h
             src/FSUIPC_User.h
-            src/icaotree.c
-            src/icaotree.h
+            src/fsui.c
+            src/fsui.h
+            src/icaolist.c
+            src/icaolist.h
+            src/linkage.h
+            src/metadata.rc
+            src/product.h
             src/IPCuser.c
             src/IPCuser.h
             src/kdtree.c
@@ -74,7 +89,12 @@ elseif(CMAKE_ARTIFACT_TYPE MATCHES DLL)
             src/memmap.c
             src/memmap.h
             src/progressWindow.c
-            src/progressWindow.h)
+            src/progressWindow.h
+            src/progressWindowBasic.c
+            src/progressWindowBasic.h
+            src/progressWindowFS.c
+            src/progressWindowFS.h
+            )
 
     # rename DLL output to autower.dll
     set_target_properties(autowerdll PROPERTIES PREFIX "")

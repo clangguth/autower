@@ -30,13 +30,15 @@
 #define DEFAULT_TOWERALT5RW 140
 #define DEFAULT_TOWERALT6RW 140
 #define DEFAULT_TOWERMINCANDIDATES 100
-#define DEFAULT_ZOOMLEVEL 384
+#define DEFAULT_ZOOMLEVEL 256
 #define DEFAULT_UPDATEINTERVAL 5000
 #define DEFAULT_DISPLAYDURATION 5
 #define DEFAULT_SIMPLEFIXHEADING 90
 #define DEFAULT_SIMPLEFIXDISTANCE 10
 #define DEFAULT_ALWAYSSETTOWER 0
 #define DEFAULT_FORCEFSPATHTOUNC 0
+#define DEFAULT_INTEGRATEDUI 1
+#define DEFAULT_PROGRESSDISPLAYDELAY 2500
 
 #define KEY_COMLOCKTHRESHOLD "ComLockThreshold"
 #define KEY_MAXDISPLAYINFOALTITUDE "MaxDisplayInfoAltitude"
@@ -55,6 +57,8 @@
 #define KEY_SIMPLEFIXDISTANCE "SimpleFixDistance"
 #define KEY_ALWAYSSETTOWER "AlwaysSetTower"
 #define KEY_FORCEFSPATHTOUNC "ForceFsPathToUNC"
+#define KEY_INTEGRATEDUI "IntegratedUI"
+#define KEY_PROGRESSDISPLAYDELAY "ProgressDisplayDelay"
 
 /* user-definable variables */
 typedef struct Configuration {
@@ -75,6 +79,8 @@ typedef struct Configuration {
 	int displayDuration;
 	unsigned int alwaysSetTower;
 	unsigned int forceFsPathToUNC;
+	unsigned int integratedUI;
+	unsigned int progressDisplayDelay;
 } Configuration;
 
 Configuration* configInitialize();

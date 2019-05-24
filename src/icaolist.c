@@ -17,21 +17,21 @@
 */
 
 
-#include "icaotree.h"
+#include "icaolist.h"
 #include "display.h"
 
 AirportInfo** array = NULL;
 unsigned int capacity = 0;
 unsigned int count = 0;
 
-unsigned int getIcaoTreeSize() {
+unsigned int getIcaoListSize() {
 	return count;
 }
-AirportInfo* getAirportInIcaoTree(int position) {
+AirportInfo* getAirportInIcaoList(int position) {
 	return array[position];
 }
 
-void freeIcaoTree() {
+void freeIcaoList() {
 	free(array);
 }
 
@@ -55,7 +55,7 @@ int binarySearch(char *icao) {
 	return -(position+1);
 }
 
-AirportInfo* findAirportInIcaoTree(char* icao) {
+AirportInfo* findAirportInIcaoList(char* icao) {
 	int position = binarySearch(icao);
 	if (position >= 0) {
 		return array[position];
@@ -88,7 +88,7 @@ void ensureCapacity() {
 	capacity = newCapacity;
 }
 
-void insertAirportInIcaoTree(AirportInfo* airport) {
+void insertAirportInIcaoList(AirportInfo* airport) {
 	ensureCapacity();
 	int where = binarySearch(airport->icao);
 	if (where < 0) {

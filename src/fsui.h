@@ -16,23 +16,11 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef DISPLAY_H_
-#define DISPLAY_H_
-#include "product.h"
 
-#define WINDOW_TITLE PRODUCT " " PRODUCT_VERSION
-
-#define DISPLAY_DEBUG 5
-#define DISPLAY_DETAIL 4
-#define DISPLAY_INFO 3
-#define DISPLAY_WARN 2
-#define DISPLAY_ERROR 1
-#define DISPLAY_FATAL 0
-
+#ifndef FSUI_H_
+#define FSUI_H_
 #include <windows.h>
 
-void setDisplayLevel(int level);
-void display(int level, const char *fmt, ...);
-LPVOID getFormattedErrorMessage();
+void FSMessageBox(char* message, UINT type);
 
-#endif /* DISPLAY_H_ */
+#endif /* FSUI_H_ */

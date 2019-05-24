@@ -81,6 +81,17 @@
     code from "warning" to "detail". The message was reported to show up for the Aerosoft
     German Airports 3 X - Paderborn-Lippstadt EDLP Exclude BGL, but does not seem to have
     other side effects.
+
+2.1.0 - May 15, 2010
+  - changed FSUIPC detection code for the DLL
+  - added UI integration for the DLL
+  - made progress window delay customizable
+  - changed scenery.cfg parsing to be case-insensitive for the "active" attribute
+  - minimal performance gain for DLL: DisableThreadLibraryCalls()
+  - changed default zoom level from 6 to 4
+  - removed some obsolete parameters to functions (code cleanup)
+  - adjusted documentation
+  - changed version number scheme, and included metadata information in binary files
 */
 
 #include <windows.h>
@@ -96,48 +107,22 @@
 #include "memmap.h"
 #include "md5Usage.h"
 #include "config.h"
-#include "icaotree.h"
+#include "icaolist.h"
 
 /*  This stuff is required for building the DLL only.
 	Pass the -DBUILD_DLL option to the compiler.
 */
 #ifdef BUILD_DLL
-typedef int ID;
-typedef unsigned int VAR32;
-typedef VAR32 FLAGS32;
-#define   FSAPI __stdcall
+#include "linkage.h"
 
 /* These are the functions called when loading and unloading the module */
 void FSAPI module_init ();
 void FSAPI module_deinit ();
 
-/* These are the two structs that are exported from the DLL */
-typedef struct IMPORTTABLE
-{
-    struct
-    {
-        ID fnID;
-        PVOID fnPtr;
-    } dummy;
-} IMPORTTABLE;
-__declspec (dllexport) IMPORTTABLE ImportTable;
-
-typedef struct LINKAGE
-{
-    ID ModuleID;
-    void (FSAPI *ModuleInit) ();
-    void (FSAPI *ModuleDeInit) ();
-    FLAGS32 ModuleFlags;
-    UINT32 ModulePriority;
-    UINT32 ModuleVersion;
-    LPVOID* Table[];
-} LINKAGE;
-__declspec (dllexport) LINKAGE Linkage;
-
 /* The global exported LINKAGE object */
 LINKAGE Linkage =
 {
-    0x000002d9,
+    0x00000000,
     module_init,
     module_deinit,
     0,
@@ -150,7 +135,9 @@ LINKAGE Linkage =
 IMPORTTABLE ImportTable =
 {
     {
-        0x00000000, NULL
+            { IMPORT_FS9_ID, NULL },
+            { IMPORT_FSUIPC_ID, NULL },
+            { 0x00000000, NULL },
     }
 }; 
 BYTE dllIpcMem[1024];
@@ -224,19 +211,26 @@ float printableCom(DWORD encoded);
 int calculateTowerPosition(double* lon, double* lat);
 double calculateTowerAltitude();
 
-DWORD WINAPI commonMain( LPVOID dummy);
+DWORD WINAPI commonMain();
 void makeAbsolutePath(char* filename);
 
 void requestStop() {
-	WaitForSingleObject(ipcMutex, INFINITE);
+	/* 10 seconds should be a reasonable timeout */
+	DWORD shouldRelease = WaitForSingleObject(ipcMutex, 10000);
+	shouldRelease = shouldRelease != WAIT_FAILED && shouldRelease != WAIT_TIMEOUT;
 	stopRequested = TRUE;
-	ReleaseMutex(ipcMutex);
+	if (shouldRelease) ReleaseMutex(ipcMutex);
 }
 
 #ifdef BUILD_DLL
 void FSAPI module_init () {
-	DWORD thread;
-	CreateThread(NULL,0,&commonMain,NULL,0,&thread);
+	if (ImportTable.modules[IMPORT_FSUIPC].functions == NULL) {
+		display(DISPLAY_FATAL, "You do not seem to have the FSUIPC module installed. "
+		PRODUCT " will not work."
+		);
+		return;
+	}
+	commonMain();
 }
 
 void FSAPI module_deinit () {
@@ -244,6 +238,10 @@ void FSAPI module_deinit () {
 }
 
 BOOL WINAPI DllMain (HANDLE hDll, DWORD dwReason, LPVOID lpReserved) {
+	if (dwReason == DLL_PROCESS_ATTACH) {
+		config = configInitialize();
+		DisableThreadLibraryCalls(hDll);
+	}
 	return TRUE;
 }
 
@@ -254,7 +252,8 @@ BOOL isDebuggedAirportSet() {
 void debugAirport(char* bglFile, AirportInfo* airport) {
 }
 
-#else
+#else /* exe */
+
 BOOL WINAPI consoleHandler(DWORD event) {
 	requestStop();
 	Sleep(MAINLOOP_SLEEP_INTERVAL * 5);
@@ -264,6 +263,7 @@ BOOL WINAPI consoleHandler(DWORD event) {
 char debuggedAirport[8] = {0};
 int main(int argc, char** argv) {
 	SetConsoleTitleA(WINDOW_TITLE);
+	config = configInitialize();
 	if (argc >= 2) {
 		strncpy(debuggedAirport, argv[1], 7);
 		display(DISPLAY_FATAL, "Debugging airport: %s", debuggedAirport);
@@ -353,7 +353,14 @@ void debugAirport(char* bglFile, AirportInfo* airport) {
 }
 #endif
 
-BOOL connectToFSUIPC(BOOL shutup) {
+BOOL connectToFSUIPC() {
+
+#ifdef BUILD_DLL
+	BOOL shutup = TRUE;
+#else
+	BOOL shutup = FALSE;
+#endif
+
 	BOOL success = FSUIPC_OPEN || ipcResult < 2;
 	if (!success && !shutup) {
 		display(DISPLAY_FATAL, "FSUIPC connection failed: %s",IPC_ERROR_MESSAGES[ipcResult]);
@@ -418,7 +425,7 @@ BOOL doesAirportOfferCurrentRadioFreq(AirportInfo* airport) {
 	return FALSE;
 }
 
-AirportInfo* chooseBestInSearchResults(char* lookForIcao) {
+AirportInfo* chooseBestInSearchResults() {
 	int i;
 	AirportInfo *closest = NULL;
 	BOOL closestHasRadio = FALSE;
@@ -426,32 +433,22 @@ AirportInfo* chooseBestInSearchResults(char* lookForIcao) {
 		AirportInfo *candidate = airportSearchResults[i];
 		BOOL candidateHasRadio = FALSE;
 
-		if (lookForIcao == NULL) {
-			/* check the COM frequencies of this airport,
-			but only if it's within COM_LOCK_THRESHOLD nm */
-			if (candidate->currentDistance < config->comLockThreshold) {
-				candidateHasRadio = doesAirportOfferCurrentRadioFreq(candidate);
-			}
-			if (closest == NULL || (candidateHasRadio && !closestHasRadio)) {
-				/* this airport is better than the previous, either because there was no previous ;-)
-				or because its COM frequency matches while the previous doesn't */
-				closest = candidate;
-				closestHasRadio = candidateHasRadio;
-				continue;
-			}
+		/* check the COM frequencies of this airport,
+		but only if it's within COM_LOCK_THRESHOLD nm */
+		if (candidate->currentDistance < config->comLockThreshold) {
+			candidateHasRadio = doesAirportOfferCurrentRadioFreq(candidate);
+		}
+		if (closest == NULL || (candidateHasRadio && !closestHasRadio)) {
+			/* this airport is better than the previous, either because there was no previous ;-)
+			or because its COM frequency matches while the previous doesn't */
+			closest = candidate;
+			closestHasRadio = candidateHasRadio;
+			continue;
+		}
 
-			if (!candidateHasRadio && closestHasRadio) {
-				/* this airport is worse regardless of its distance */
-				continue;
-			}
-		} else {
-			if (!strcmp(candidate->icao, lookForIcao)) {
-				return candidate;
-			}
-			if (closest == NULL) {
-				closest = candidate;
-				continue;
-			}
+		if (!candidateHasRadio && closestHasRadio) {
+			/* this airport is worse regardless of its distance */
+			continue;
 		}
 		
 		/* airports are equal wrt to radio availability - let the distance decide. */
@@ -463,7 +460,7 @@ AirportInfo* chooseBestInSearchResults(char* lookForIcao) {
 	return closest;
 }
 
-AirportInfo* findCurrentlyClosestAirport(long factor, int minCount, char* lookForIcao) {
+AirportInfo* findCurrentlyClosestAirport(long factor, int minCount) {
 	airportSearchResultCount = 0;
 	if (factor < 2) factor = 2;
 	double dFactor = factor;
@@ -484,16 +481,16 @@ AirportInfo* findCurrentlyClosestAirport(long factor, int minCount, char* lookFo
 		if (factor * 2 > factor) {
 			/* recurse only if we won't get stuck, i.e.,
 			prevent endless loops caused by overflows */
-			return findCurrentlyClosestAirport(factor * 2, minCount, lookForIcao);
+			return findCurrentlyClosestAirport(factor * 2, minCount);
 		}
 	}
-	return chooseBestInSearchResults(lookForIcao);
+	return chooseBestInSearchResults();
 }
 
 AirportInfo* findOverriddenAirport(AirportInfo* airport) {
 	int debugLevel = DISPLAY_DETAIL;
 
-	AirportInfo *existing =	findAirportInIcaoTree(airport->icao);
+	AirportInfo *existing =	findAirportInIcaoList(airport->icao);
 	if (existing != NULL) {
 		display(debugLevel, "Found an existing entry for %s", airport->icao);
 		return existing;
@@ -542,21 +539,28 @@ BOOL insertAirportInKdTree(AirportInfo *airport, int debugLevel) {
 unsigned int readDatabaseHeader(unsigned int header) {
 	if (header == 0) return 0;
 
+	/* For testing, this is a way to provoke the reaction to an incompatible version.
+	header &= 0xFFFFFF;
+	header |= 0x03000000;
+	*/
+
 	/* the highest 8 bits of the count encode the data file version */
 	if (header >> 24 < DATFILE_VERSION) {
+		/*
 		display(DISPLAY_INFO, "%s%s%s%s",
-			"A datafile from a previous version of autower has been detected.\r\n",
+			"A datafile from a previous version of " PRODUCT " has been detected.\r\n",
 			"Because of changes in the datafile layout, it needs to be rebuilt.\r\n",
 			"If you want to take advantage of possible new options, please make\r\n",
 			"sure you're using an up-to-date configuration file."
 		);
+		*/
 		return 0;
 	}
 	if (header >> 24 > DATFILE_VERSION) {
 		display(DISPLAY_WARN, "%s%s%s",
-			"A datafile from a NEWER version of autower has been detected.\r\n",
-			"Because autower will not be able to work with this file, the datafile ",
-			"has to be rebuilt.\r\n"
+			"A datafile from a NEWER version of " PRODUCT " has been detected.\r\n",
+			"Because " PRODUCT " will not be able to work with this file, the datafile ",
+			"has to be rebuilt."
 		);
 		return 0;
 	}
@@ -704,7 +708,7 @@ BOOL ipcReadCurrentPosition() {
 }
 
 BOOL ipcReadData() {
-	if (connectToFSUIPC(FALSE)) {
+	if (connectToFSUIPC()) {
 		if (!ipcReadIsFsReady()) return FALSE;
 		if (!ipcReadCurrentPosition()) return FALSE;
 		if (!ipcReadRadioCom()) return FALSE;
@@ -720,7 +724,7 @@ BOOL ipcDisplay(char *text, int duration) {
 	char safeText[128] = {0};
 	strncpy(safeText,text,127);
 	
-	if (!connectToFSUIPC(FALSE)) {
+	if (!connectToFSUIPC()) {
 		return FALSE;
 	}
 	success &= FSUIPC_Write(0x3380, sizeof(safeText), safeText, &ipcResult);
@@ -851,7 +855,8 @@ void airportChanged(BOOL reallyChanged) {
 	}
 }
 
-void mainLoop() {
+/* This method signature is used because it's instantiated via CreateThread() for the DLL. */
+DWORD WINAPI mainLoop(LPVOID unused) {
 	unsigned int progress = config->updateInterval;
 	for (; !stopRequested; Sleep(MAINLOOP_SLEEP_INTERVAL)) {
 		progress += MAINLOOP_SLEEP_INTERVAL;
@@ -859,7 +864,7 @@ void mainLoop() {
 			progress = 0;
 			WaitForSingleObject(ipcMutex, INFINITE);
 			if (!stopRequested && ipcReadData()) {
-				AirportInfo *newAirport = findCurrentlyClosestAirport(2, config->towerMinCandidates, NULL);
+				AirportInfo *newAirport = findCurrentlyClosestAirport(2, config->towerMinCandidates);
 				BOOL reallyChanged = newAirport != currentAirport;
 				currentAirport = newAirport;
 				if (reallyChanged || config->alwaysSetTower) {
@@ -876,6 +881,7 @@ void mainLoop() {
 	FSUIPC_Close();
 #endif
 	display(DISPLAY_DETAIL, "Main loop finished");
+	return 0;
 }
 
 BOOL isAccessibleBaseDir(char* directory) {
@@ -958,7 +964,7 @@ BOOL setupChooseBaseDir() {
 		if (primary != fsBaseDir) strcpy(fsBaseDir, primary);
 		return TRUE;
     } else {
-    	strcpy(buf, "autower was looking for the FS9 installation in ");
+    	strcpy(buf, PRODUCT " was looking for the FS9 installation in ");
 		strcat(buf, primary);
 		strcat(buf,"\r\n");
 
@@ -969,10 +975,10 @@ BOOL setupChooseBaseDir() {
 			} else {
 				strcat(buf, "It also tried ");
 				strcat(buf, secondary);
-				strcat(buf, "\r\nNone of these directories can be accessed, so autower will not function.");
+				strcat(buf, "\r\nNone of these directories can be accessed, so " PRODUCT " will not function.");
 			}
 		} else {
-			strcat (buf, "This directory cannot be accessed, so autower will not function.");
+			strcat (buf, "This directory cannot be accessed, so " PRODUCT " will not function.");
 		}
 		display(DISPLAY_FATAL, buf);
 		return FALSE;
@@ -1009,31 +1015,8 @@ void setupOtherPathVariables() {
 
 
 #ifdef BUILD_DLL
-BOOL initialDLLconnectToFSUIPC() {
-    int sleep = 1000;
-    char buf[512];
-    strcpy(buf, "autower has been trying to connect to FSUIPC for some time now.\r\n");
-    strcat(buf, "So far the connection did not succeed. If you are sure that you\r\n");
-    strcat(buf, "have FSUIPC installed, please click YES to keep trying.\r\n");
-    strcat(buf, "If you choose NO, autower will stop trying and won't be functional.\r\n");
-    while (TRUE) {
-		int tries = 100;
-		while (tries-- > 0) {
-			Sleep(sleep);
-			if (connectToFSUIPC(TRUE)) return TRUE;
-		}
-		/* still not successfull */
-		sleep *= 2;
-		if (IDNO == MessageBox(NULL,buf,WINDOW_TITLE,MB_ICONWARNING | MB_YESNO)) {
-			return FALSE;
-		}
-    }
-    return FALSE;
-}
-
 BOOL setupDll() {
-    if (!initialDLLconnectToFSUIPC()) return FALSE;
-    if (!setupBaseDirVariable()) return FALSE;
+	if (!getBasePathFromFS9(fsBaseDir)) return FALSE;
     setupOtherPathVariables();
     configRead(config, iniFile);
     return TRUE;
@@ -1050,10 +1033,10 @@ BOOL setupExe() {
 BOOL setup() {
 	char buf[256];
 
-	strcpy(buf,"An error occurred while initializing autower.\r\n");
+	strcpy(buf,"An error occurred while initializing " PRODUCT ".\r\n");
 #ifdef BUILD_DLL
 	if (setupDll()) return TRUE;
-	strcat(buf,"You can still play Flight Simulator, but autower will not be functional.");
+	strcat(buf,"You can still play Flight Simulator, but " PRODUCT " will not be functional.");
 #else
 	if (setupExe()) return TRUE;
 #endif
@@ -1125,7 +1108,7 @@ BOOL setupSceneryInfo() {
 		int layer = GetPrivateProfileInt(areaName,"Layer",0,sceneryInfo.sceneryCfg);
 		GetPrivateProfileString(areaName,"active","false",buf,sizeof(buf),sceneryInfo.sceneryCfg);
 		CharLower(buf);
-		layers[area] = (!strcmp("true",buf)) ? layer : -1;
+		layers[area] = (!strcmpi("true",buf)) ? layer : -1;
 		if (layers[area] != -1) ++activeLayers;
 		display(DISPLAY_DEBUG,"area %s -> layer %d, active: %d",areaName, layer, (layers[area] != -1));
 	}
@@ -1207,9 +1190,8 @@ int setupAirports() {
 	return 0;
 }
 
-DWORD WINAPI commonMain( LPVOID dummy) {
+DWORD WINAPI commonMain() {
 	ipcMutex = CreateMutexA(NULL, FALSE, NULL);
-	config = configInitialize();
 	if (!setup()) return 1;
 
 	int loadedAirports = setupAirports();
@@ -1218,11 +1200,14 @@ DWORD WINAPI commonMain( LPVOID dummy) {
 	/* factor 2 because of artificial entries  */
 	airportSearchResults = malloc(sizeof(DWORD)*loadedAirports * 2);
 
-#ifndef BUILD_DLL
+#ifdef BUILD_DLL
+	DWORD thread;
+	CreateThread(NULL,0, &mainLoop, NULL, 0, &thread);
+#else
 	SetConsoleCtrlHandler(consoleHandler, TRUE);
-#endif
-	mainLoop();
+	mainLoop(0);
 	FSUIPC_Close();
+#endif
 	return 0;
 }
 
@@ -1322,18 +1307,18 @@ void convertRunwayInfoFromBuildToRuntime(AirportInfo* airport) {
 	airport->runways = runways;
 }
 
-void freeIcaoTreeAndWrite() {
+void freeIcaoListAndWrite() {
 	DWORD dummy = 0;
 	unsigned int i;
-	unsigned int count = getIcaoTreeSize();
+	unsigned int count = getIcaoListSize();
 	for (i=0; i < count; ++i) {
-		AirportInfo* airport = getAirportInIcaoTree(i);
+		AirportInfo* airport = getAirportInIcaoList(i);
 		convertRunwayInfoFromBuildToRuntime(airport);
 		if (hDataFile != INVALID_HANDLE_VALUE)
 			WriteFile(hDataFile,airport,sizeof(AirportInfo),&dummy,NULL);
 		debugAirport(NULL, airport);
 	}
-	freeIcaoTree();
+	freeIcaoList();
 }
 
 int buildDatabase() {
@@ -1351,7 +1336,7 @@ int buildDatabase() {
 		progressLayerDone();
 	}
 	free(airportSearchResults);
-	freeIcaoTreeAndWrite();
+	freeIcaoListAndWrite();
 	if (hDataFile != INVALID_HANDLE_VALUE) {
 		writeDatabaseHeaderAndClose(airports);
 	}
@@ -1650,7 +1635,7 @@ int parseAirportRecord(char* bglFile, LPVOID base, DWORD offset) {
 	debugAirport(bglFile, airport);
 	if (!isOverriding) {
 		insertAirportInKdTree(airport, DISPLAY_DETAIL);
-		insertAirportInIcaoTree(airport);
+		insertAirportInIcaoList(airport);
 		progressIncrementAirportCount(1);
 		return 1;
 	}

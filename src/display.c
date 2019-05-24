@@ -17,8 +17,11 @@
 */
 
 #include <windows.h>
-#include "display.h"
 #include <stdio.h>
+#include "display.h"
+#ifdef BUILD_DLL
+#include "fsui.h"
+#endif
 
 int displayLevel;
 
@@ -29,11 +32,11 @@ void setDisplayLevel(int level) {
 void displayCombined(LPSTR message, int level) {
 #ifdef BUILD_DLL
 	if (level <= DISPLAY_ERROR)
-		MessageBox(NULL,message,WINDOW_TITLE,MB_ICONERROR);
+		FSMessageBox(message,MB_ICONERROR);
 	else if (level == DISPLAY_WARN)
-		MessageBox(NULL,message,WINDOW_TITLE,MB_ICONWARNING);
+		FSMessageBox(message,MB_ICONWARNING);
 	else
-		MessageBox(NULL,message,WINDOW_TITLE,MB_ICONINFORMATION);
+		FSMessageBox(message,MB_ICONINFORMATION);
 #else
 	printf(message);
 	if (message[strlen(message)-1] != '\n') printf("\r\n");
