@@ -16,34 +16,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="68c22bd9-a99d-471a-a965-04ab3280ce14" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.txt" beforeDir="false" afterPath="$PROJECT_DIR$/README.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/autower.ini" beforeDir="false" afterPath="$PROJECT_DIR$/autower.ini" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/autower.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/autower.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/autower.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/autower.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/bgl.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/bgl.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/config.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/config.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/config.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/config.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/display.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/display.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/display.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/display.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/fsui.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/fsui.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/fsui.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/fsui.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/icaolist.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/icaolist.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/icaolist.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/icaolist.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/linkage.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/linkage.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/md5Usage.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/md5Usage.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/md5Usage.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/md5Usage.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/memmap.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/memmap.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/memmap.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/memmap.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/metadata.rc" beforeDir="false" afterPath="$PROJECT_DIR$/src/metadata.rc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/coords.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/coords.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/product.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/product.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/progressWindow.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/progressWindow.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/progressWindow.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/progressWindow.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/progressWindowBasic.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/progressWindowBasic.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/progressWindowBasic.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/progressWindowBasic.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/progressWindowFS.c" beforeDir="false" afterPath="$PROJECT_DIR$/src/progressWindowFS.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/progressWindowFS.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/progressWindowFS.h" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <ignored path="$PROJECT_DIR$/cmake-build-release/" />
@@ -66,8 +46,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/CMakeLists.txt">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="158">
-              <caret line="24" selection-start-line="24" selection-end-line="24" />
+            <state relative-caret-position="267">
+              <caret line="108" selection-start-line="108" selection-end-line="108" />
             </state>
           </provider>
         </entry>
@@ -224,7 +204,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="15281000" />
+    <option name="totallyTimeSpent" value="15817000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="1791" y="862" width="1453" height="1000" extended-state="0" />
@@ -289,8 +269,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/CMakeLists.txt">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="158">
-          <caret line="24" selection-start-line="24" selection-end-line="24" />
+        <state relative-caret-position="267">
+          <caret line="108" selection-start-line="108" selection-end-line="108" />
         </state>
       </provider>
     </entry>

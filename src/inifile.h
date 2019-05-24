@@ -12,14 +12,9 @@
     the license is included with this distribution (LICENSE.txt).
 */
 
+#ifndef INIFILE_H_
+#define INIFILE_H_
 
-#ifndef PRODUCT_H_
-#define PRODUCT_H_
+char* iniFileEnumerateSections(char* iniFile);
 
-#define PRODUCT "autower"
-#define PRODUCT_VERSION "2.4.0"
-#define PRODUCT_VERSION_BIN 2, 4, 0, 0
-
-#define PRODUCT_FULL PRODUCT " " PRODUCT_VERSION
-
-#endif /* PRODUCT_H_ */
+#endif /* INIFILE_H_ */

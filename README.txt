@@ -1,7 +1,7 @@
 
 
           =====================================================
-          = autower 2.3.0 (C) Christoph Langguth, 2006 - 2011 =
+          = autower 2.4.0 (C) Christoph Langguth, 2006 - 2011 =
           =====================================================
 
 
@@ -319,6 +319,18 @@ NOTE: a more detailed version history is available in the source code distributi
                      - Consolidated license information (was somewhat ambiguous
                        before). autower is now licensed under the GPL v2 (only).
 
+2.4.0 (Nov 04, 2011) - The scenery parsing was completely rewritten, as it was
+                       previously relying on too many assumptions which hold in
+                       most cases, but not in every setup. Now, an arbitrary
+                       number of scenery layers is supported, and the ordering
+                       should match exactly with FS's own logic.
+                     - Removed a small glitch that was accidentally introduced
+                       with v2.3.0 (forgot to remove debug messages that uncon-
+                       ditionally get displayed when overriding the tower at TNCM)
+                     - lowered the verbosity of some messages from detail to
+                       debug, in order to keep the detail loglevel clean
+                     - small fixes in autower.ini 
+
 
 ACKNOWLEDGEMENTS
 ================
@@ -328,7 +340,7 @@ in making this software possible, or allowing for its evolution.
 
 In terms of code, that specifically means:
 
-    Winfried Ortman for his analysis and description of the BGL file format
+    Winfried Orthmann, for his analysis and description of the BGL file format
     
     Pete Dowson, the creator of FSUIPC
     

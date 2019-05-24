@@ -125,6 +125,15 @@ Version history
 	- license clarification: previous versions were ambiguous about which version applies;
 	  from now on, it should be clear that GPLv2 only is in effect.
 
+2.4.0 - Nov 04, 2011:
+	- completely rewritten logic for interpreting the areas in scenery.cfg. Layers are
+	  now ordered exactly as in FS (using the 'Layer' setting only, ignoring the section name),
+	  and an arbitrary number of layers is supported.
+	- fixed a small glitch that was introduced in 2.3.0 (forgot to remove some development-only
+	  messages, which would pop up unconditionally)
+	- adjusted (lowered) priority of some messages, to de-clutter the DETAIL log
+	  level.
+	- small fixes in autower.ini
 */
 
 #include <windows.h>
@@ -142,6 +151,7 @@ Version history
 #include "config.h"
 #include "icaolist.h"
 #include "coords.h"
+#include "scenerycfg.h"
 
 /*  This stuff is required for building the DLL only.
 	Pass the -DBUILD_DLL option to the compiler.
@@ -191,7 +201,7 @@ char iniFile[MAX_PATH] = {0};
 /* own data file handle */
 HANDLE hDataFile = NULL;
 
-SceneryCfgLayers sceneryInfo = {0};
+SceneryInfo* sceneryInfo = NULL;
 
 /* Airports tree & search variables */
 KdTree airportsTree = NULL;
@@ -331,7 +341,7 @@ void decodeAndDisplayTowerPositionFlags(unsigned int debuglevel, int towerPositi
 	strcat(buf, ", lon from ");
 	if (towerPositionFlags & TOWERPOS_LON_AP) {
 		strcat(buf, "airport");
-	} else if (towerPositionFlags & TOWERPOS_LON_AP){
+	} else if (towerPositionFlags & TOWERPOS_LON_TWR){
 		strcat(buf, "tower");
 	} else {
 		strcat(buf, "config");
@@ -571,13 +581,8 @@ void fixupAirport(AirportInfo* airport) {
 		char name[AIRPORT_NAME_SIZE];
 		GetPrivateProfileStringA(airport->icao, KEY_ICAO_NAME, NULL, name, AIRPORT_NAME_SIZE, iniFile);
 		if (name[0]) {
-			display(DISPLAY_DETAIL, "Changed name for %s: %s -> %s", airport->icao, airport->name, name);
+			display(DISPLAY_DEBUG, "Changed name for %s: %s -> %s", airport->icao, airport->name, name);
 			strcpy(airport->name, name);
-		}
-		if (!strcmpi(airport->icao, "TNCM")) {
-			display(DISPLAY_ALWAYS, "LAT: %08lX -> %f", airport->latitude, decodeLatitude(airport->latitude));
-			display(DISPLAY_ALWAYS, "LON: %08lX -> %f", airport->longitude, decodeLongitude(airport->longitude));
-			display(DISPLAY_ALWAYS, "ALT: %08lX -> %f", airport->altitude, decodeAltitude(airport->altitude));
 		}
 		overrideCoordinates(airport, config, iniFile);
 	}
@@ -637,15 +642,15 @@ BOOL readDatabaseSceneryMd5() {
 	MD5 md5;
 	int i;
 	if (!readDatabaseMd5(&md5)) return FALSE;
-	if (!md5Equals(&md5, &sceneryInfo.sceneryCfgMd5)) {
+	if (!md5Equals(&md5, &(sceneryInfo->sceneryCfgMd5))) {
 		display(DISPLAY_DETAIL, "scenery.cfg has changed, requesting database rebuild");
 		return FALSE;
 	}
 	display(DISPLAY_DEBUG, "scenery.cfg has not changed");
 
-	for (i=0; i < sceneryInfo.layersCount; ++i) {
+	for (i=0; i < sceneryInfo->layersCount; ++i) {
 		if (!readDatabaseMd5(&md5)) return FALSE;
-		if (!md5Equals(&md5, sceneryInfo.layerMd5[i])) {
+		if (!md5Equals(&md5, sceneryInfo->layerMd5[i])) {
 			display(DISPLAY_DETAIL, "Layer at index %d has changed, requesting database rebuild", i);
 			return FALSE;
 		}
@@ -873,6 +878,7 @@ BOOL ipcSetTowerTo(double lat, double lon, double alt, BOOL setZoom) {
 
 int calculateTowerPosition(double* lon, double* lat) {
 	int flags = 0;
+
 	*lat = decodeLatitude(currentAirport->towerLatitude);
 	if ((currentAirport->towerFlags & TOWERPOS_OVERRIDE_LATLON) != 0) {
 		flags |= TOWERPOS_LAT_CFG;
@@ -883,6 +889,7 @@ int calculateTowerPosition(double* lon, double* lat) {
 	} else {
 		flags |= TOWERPOS_LAT_TWR;
 	}
+
 	*lon = decodeLongitude(currentAirport->towerLongitude);
 	if ((currentAirport->towerFlags & TOWERPOS_OVERRIDE_LATLON) != 0) {
 		flags |= TOWERPOS_LON_CFG;
@@ -1068,7 +1075,7 @@ BOOL setupBaseDirVariable() {
 		display(DISPLAY_FATAL, "Problem determining FS9 installation directory!");
 		return FALSE;
 	}
-    display(DISPLAY_DETAIL, "FSUIPC returns basedir: %s", fsBaseDir);
+    display(DISPLAY_DEBUG, "FSUIPC returns basedir: %s", fsBaseDir);
 	/* append trailing slash if needed */
     if(fsBaseDir[strlen(fsBaseDir) - 1] != '\\'){
         strcat(fsBaseDir, "\\");
@@ -1128,127 +1135,36 @@ char* getSceneryCfgName() {
 
 BOOL setupSceneryInfoMd5() {
 	int i;
-	MD5* md5 = &sceneryInfo.sceneryCfgMd5;
+	MD5* md5 = &(sceneryInfo->sceneryCfgMd5);
 
-	sceneryInfo.sceneryCfg = getSceneryCfgName();
-	sceneryInfo.layerMd5 = malloc(sceneryInfo.layersCount * sizeof(struct MD5));
-	for (i=0; i < sceneryInfo.layersCount; ++i) {
+	sceneryInfo->layerMd5 = malloc(sceneryInfo->layersCount * sizeof(struct MD5));
+	for (i=0; i < sceneryInfo->layersCount; ++i) {
 		md5 = malloc(sizeof(struct MD5));
-		if (!md5ForFile(md5, sceneryInfo.layerDat[i])) return FALSE;
-		sceneryInfo.layerMd5[i] = md5;
+		if (!md5ForFile(md5, sceneryInfo->layerDat[i])) return FALSE;
+		sceneryInfo->layerMd5[i] = md5;
 	}
 	return TRUE;
 }
 
-BOOL verifyAndFixSceneryDat(char* path) {
-	int debugLevel = DISPLAY_DETAIL;
-	char alternativePath[MAX_PATH];
-
-	HANDLE hFile = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-	if (hFile != INVALID_HANDLE_VALUE) {
-		CloseHandle(hFile);
-		return TRUE;
-	}
-	display(debugLevel, "scenery.dat not found at %s", path);
-	/* maybe the path is one level too deep: "scenery\scenery.dat" */
-	if (strlen(path) < 20) return FALSE;
-	strcpy(alternativePath, path);
-	char* alternativeStart = alternativePath + strlen(path) - 19;
-	strcpy(alternativeStart, SCENERY_DAT);
-	display(debugLevel, "applying quirk to look for it at %s", alternativePath);
-	hFile = CreateFile(alternativePath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-	if (hFile != INVALID_HANDLE_VALUE) {
-		CloseHandle(hFile);
-		strcpy(path, alternativePath);
-		return TRUE;
-	}
-	display(debugLevel, "File still wasn't found, giving up for this file.");
-	return FALSE;
-}
-
 BOOL setupSceneryInfo() {
-	char buf[4096];
-	int activeLayers = 0;
-
-	sceneryInfo.sceneryCfg = getSceneryCfgName();
-	display(DISPLAY_DEBUG, "scenery.cfg: %s\n", sceneryInfo.sceneryCfg);
-
-	int layers[1000] = {0};
-	char areaName[12];
-	int area;
-	char layerPath[MAX_PATH] = {0};
-
-	for (area = 1; area < 1000; area++) {
-		sprintf(areaName,"Area.%03d",area);
-		int layer = GetPrivateProfileInt(areaName,"Layer",0,sceneryInfo.sceneryCfg);
-		GetPrivateProfileString(areaName,"active","false",buf,sizeof(buf),sceneryInfo.sceneryCfg);
-		CharLower(buf);
-		layers[area] = (!strcmpi("true",buf)) ? layer : -1;
-		if (layers[area] != -1) ++activeLayers;
-		display(DISPLAY_DEBUG,"area %s -> layer %d, active: %d",areaName, layer, (layers[area] != -1));
-	}
-
-	char* paths[1000];
-	while (TRUE) {
-		int maxLayer=-1;
-		int maxValue=-1;
-		int i;
-		for (i=1; i < 1000; i++) {
-			if (layers[i] > maxValue) {
-				maxLayer = i;
-				maxValue = layers[i];
-			}
-		}
-		if (maxLayer == -1) break;
-		layers[maxLayer] = -1;
-
-		sprintf(areaName,"Area.%03d",maxLayer);
-		GetPrivateProfileString(areaName,"Local","",layerPath,sizeof(layerPath),sceneryInfo.sceneryCfg);
-		if (strlen(layerPath) == 0) {
-			GetPrivateProfileString(areaName,"Remote","",layerPath,sizeof(layerPath),sceneryInfo.sceneryCfg);
-			if (strlen(layerPath) == 0) continue;
-		}
-
-		makeAbsolutePath(layerPath);
-		if (layerPath[strlen(layerPath)-1] != '\\') {
-			strcat(layerPath, "\\");
-		}
-
-		strcat(layerPath, SCENERY_DAT);
-		if (verifyAndFixSceneryDat(layerPath)) {
-			char* sceneryDatPath = malloc(strlen(layerPath)+1);
-			strcpy(sceneryDatPath, layerPath);
-			paths[sceneryInfo.layersCount++] = sceneryDatPath;
-		} else {
-			GetPrivateProfileString(areaName,"required","false",buf,sizeof(buf),sceneryInfo.sceneryCfg);
-			CharLower(buf);
-			if (strcmpi("true",buf)) {
-				// Layer is NOT required.
-				display(DISPLAY_DETAIL, "%s: %s (flagged as NOT required) could not be opened for reading. Ignoring that layer!", areaName, layerPath);
-			}
-			else {
-				/* previous versions issued a warning message here, but obviously FS does honor directories
-				 * not containing a scenery.dat. Consequently, the level of the message has been lowered
-				 * from DISPLAY_WARN to DISPLAY_INFO.
-				 */
-				display(DISPLAY_INFO, "%s: %s could not be opened for reading. Ignoring that layer!", areaName, layerPath);
-			}
-		}
-	}
-	sceneryInfo.layerDat = malloc(sizeof(char*) * sceneryInfo.layersCount);
-	memcpy(sceneryInfo.layerDat, paths, sizeof(char*) * sceneryInfo.layersCount);
+	sceneryInfo = malloc(sizeof(SceneryInfo));
+	sceneryInfo->layersCount = 0;
+	sceneryInfo->sceneryCfg = getSceneryCfgName();
+	fillSceneryInfo(sceneryInfo);
+	display(DISPLAY_DEBUG, "scenery.cfg contains %d valid layers\n", sceneryInfo->layersCount);
 	return setupSceneryInfoMd5();
 }
 
 void freeSceneryInfo() {
 	int i;
-	for (i=0; i < sceneryInfo.layersCount; ++i) {
-		free(sceneryInfo.layerDat[i]);
-		free(sceneryInfo.layerMd5[i]);
+	for (i=0; i < sceneryInfo->layersCount; ++i) {
+		free(sceneryInfo->layerDat[i]);
+		free(sceneryInfo->layerMd5[i]);
 	}
-	free(sceneryInfo.layerDat);
-	free(sceneryInfo.layerMd5);
-	free(sceneryInfo.sceneryCfg);
+	free(sceneryInfo->layerDat);
+	free(sceneryInfo->layerMd5);
+	free(sceneryInfo->sceneryCfg);
+	free(sceneryInfo);
 }
 
 
@@ -1331,9 +1247,9 @@ BOOL writeDatabaseMd5(MD5* md5) {
 
 BOOL writeDatabaseSceneryMd5() {
 	int i = 0;
-	if (!writeDatabaseMd5(&sceneryInfo.sceneryCfgMd5)) return FALSE;
-	for (i=0; i < sceneryInfo.layersCount; ++i) {
-		if (!writeDatabaseMd5(sceneryInfo.layerMd5[i])) return FALSE;
+	if (!writeDatabaseMd5(&(sceneryInfo->sceneryCfgMd5))) return FALSE;
+	for (i=0; i < sceneryInfo->layersCount; ++i) {
+		if (!writeDatabaseMd5(sceneryInfo->layerMd5[i])) return FALSE;
 	}
 	return TRUE;
 }
@@ -1424,12 +1340,12 @@ int buildDatabase() {
 
 	if (!isDebuggedAirportSet()) openDatabaseForWriting();
 	progressCreateWindow();
-	progressSetTotalLayersCount(sceneryInfo.layersCount);
+	progressSetTotalLayersCount(sceneryInfo->layersCount);
 	
 	/* assign temporary space for the searches during insertion. 10000 should be far enough. */
 	airportSearchResults = malloc(sizeof(DWORD)*10000);
-	for (i=sceneryInfo.layersCount-1; i >= 0; i--) {
-		airports += parseSceneryDat(sceneryInfo.layerDat[i]);
+	for (i=sceneryInfo->layersCount-1; i >= 0; i--) {
+		airports += parseSceneryDat(sceneryInfo->layerDat[i]);
 		progressLayerDone();
 	}
 	free(airportSearchResults);

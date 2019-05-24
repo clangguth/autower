@@ -56,7 +56,7 @@ void overrideCoordinates(AirportInfo* airport, Configuration* config, char* iniF
 	if (alt[0] != 0) {
 		double nalt;
 		if (1 == sscanf(alt,"%lf",&nalt)) {
-			display(DISPLAY_DETAIL, "Redefined tower altitude of %s to %f", airport->icao, nalt);
+			display(DISPLAY_DEBUG, "Redefined tower altitude of %s to %f", airport->icao, nalt);
 			airport->towerAltitude = encodeAltitude(nalt);
 			airport->towerFlags |= TOWERPOS_OVERRIDE_ALT;
 		} else {
@@ -114,7 +114,7 @@ void overrideCoordinates(AirportInfo* airport, Configuration* config, char* iniF
 			airport->towerLatitude = encodeLatitude(nlat);
 			airport->towerLongitude = encodeLongitude(nlon);
 			airport->towerFlags |= TOWERPOS_OVERRIDE_LATLON;
-			display(DISPLAY_DETAIL, "Redefined tower lat/lon of %s to %f/%f", airport->icao, nlat, nlon);
+			display(DISPLAY_DEBUG, "Redefined tower lat/lon of %s to %f/%f", airport->icao, nlat, nlon);
 		}
 	}
 }

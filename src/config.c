@@ -14,6 +14,7 @@
 
 #include "config.h"
 #include "display.h"
+#include "inifile.h"
 #include <windows.h>
 #include <stdio.h>
 
@@ -55,39 +56,7 @@ Configuration* configInitialize() {
  * calling configFreeSections.
  */
 void configEnumerateSections(Configuration* config, char* iniFile) {
-	// we don't know the required length beforehand, so the loop below
-	// adjusts the available length exponentially.
-	unsigned int length = 32;
-	while (TRUE) {
-		config->sections = malloc(length);
-		if (config->sections == NULL) {
-			break;
-		}
-		DWORD used = GetPrivateProfileStringA(NULL, NULL, NULL, &(config->sections)[1], length-1, iniFile);
-		if (used == 0) {
-			// no .ini file at all
-			free(config->sections);
-			config->sections = NULL;
-			break;
-		}
-		if (used < length - 3) {
-			// available length was definitely enough,
-			// now convert NULL separators to spaces
-			unsigned int i;
-			for (i=0; i <= used; ++i) {
-				if (i == 0 || config->sections[i] == '\0') {
-					config->sections[i]= ' ';
-				}
-			}
-			break;
-		}
-		length *= 2;
-	}
-	if (config->sections == NULL) {
-		display(DISPLAY_DEBUG, "No sections found in %s, file doesn't exist or is invalid.", iniFile);
-	} else {
-		display(DISPLAY_DETAIL,"Found these sections in ini file:%s",config->sections);
-	}
+	config->sections = iniFileEnumerateSections(iniFile);
 }
 
 void configFreeSections(Configuration* config) {

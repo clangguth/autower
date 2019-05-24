@@ -23,8 +23,6 @@
 #define AIRPORT_COM_SIZE 8
 
 
-#define SCENERY_DAT "scenery.dat"
-#define SCENERY_CFG "scenery.cfg"
 #define DATAFILE_REL "autower.dat"
 #define INIFILE_REL "autower.ini"
 
@@ -87,15 +85,6 @@ typedef struct AirportInfo {
 	char unused[3]; // since DATFILE_VERSION = 4;
 } AirportInfo, *PAirportInfo;
 
-typedef struct SceneryInfo {
-	char* sceneryCfg;
-	MD5 sceneryCfgMd5;
-	int layersCount;
-	char** layerDat;
-	MD5** layerMd5;
-} SceneryCfgLayers;
-
-
 /*struct AirportListEntry;
 
 typedef struct AirportListEntry {
@@ -125,5 +114,6 @@ struct KdNode
 KdTree treeInsertAirport( LatLon Item, AirportInfo* payload, KdTree T );
 void treeFindAirport( LatLon Low, LatLon High, KdTree T);
 void treeFindResultCallback(AirportInfo* nextResult);
+void makeAbsolutePath(char* filename);
 
 #endif /* AUTOWER_H_ */

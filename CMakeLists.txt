@@ -29,6 +29,8 @@ if(CMAKE_ARTIFACT_TYPE MATCHES EXE)
             src/fsui.h
             src/icaolist.c
             src/icaolist.h
+            src/inifile.c
+            src/inifile.h
             src/linkage.h
             src/metadata.rc
             src/product.h
@@ -47,6 +49,8 @@ if(CMAKE_ARTIFACT_TYPE MATCHES EXE)
             src/progressWindowBasic.h
             src/progressWindowFS.c
             src/progressWindowFS.h
+            src/scenerycfg.c
+            src/scenerycfg.h
             )
 
     if(CMAKE_BUILD_TYPE MATCHES MinSizeRel)
@@ -80,6 +84,8 @@ elseif(CMAKE_ARTIFACT_TYPE MATCHES DLL)
             src/fsui.h
             src/icaolist.c
             src/icaolist.h
+            src/inifile.c
+            src/inifile.h
             src/linkage.h
             src/metadata.rc
             src/product.h
@@ -98,6 +104,8 @@ elseif(CMAKE_ARTIFACT_TYPE MATCHES DLL)
             src/progressWindowBasic.h
             src/progressWindowFS.c
             src/progressWindowFS.h
+            src/scenerycfg.c
+            src/scenerycfg.h
             )
 
     # rename DLL output to autower.dll
