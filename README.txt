@@ -279,6 +279,13 @@ VERSION HISTORY
                       shutdown. The shutdown is now better coordinated so that
                       this (hopefully) does not happen anymore.
 
+2.03 (Apr 25, 2010) - Lowered the priority of the message that an airport
+                      section has an unknown section code from "warning" to
+                      "detail". The message was reported to show up for the
+                      Aerosoft German Airports 3 X - Paderborn-Lippstadt EDLP
+                      Exclude BGL; ignoring such sections does not seem to
+                      have other side effects.
+
 
 ACKNOWLEDGEMENTS
 ================

@@ -75,6 +75,12 @@
 2.02 - April 25, 2010
   - Sporadically, the DLL variant would cause an FS crash on shutdown. The shutdown
     is now better coordinated so that this (hopefully) does not happen anymore.
+
+2.03 - April 25, 2010
+  - Lowered the priority of the message that an airport section has an unknown section
+    code from "warning" to "detail". The message was reported to show up for the Aerosoft
+    German Airports 3 X - Paderborn-Lippstadt EDLP Exclude BGL, but does not seem to have
+    other side effects.
 */
 
 #include <windows.h>
@@ -1654,8 +1660,8 @@ int parseAirportRecord(char* bglFile, LPVOID base, DWORD offset) {
 int parseRecord(char* bglFile, LPVOID base, DWORD offset) {
 	BglRecordHeader* header = base + offset;
 	if (header->type != RECORD_TYPE_AIRPORT) {
-		display(DISPLAY_WARN, "File %s, offset %08X: expected airport ID (%04X), but found %04X. Aborting parse of record",
-				bglFile, header, RECORD_TYPE_AIRPORT, header->type
+		display(DISPLAY_DETAIL, "File %s, offset %08X: expected airport ID (%04X), but found %04X. Ignoring this record.",
+				bglFile, offset, RECORD_TYPE_AIRPORT, header->type
 		);
 		return 0;
 	}
