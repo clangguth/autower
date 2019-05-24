@@ -273,9 +273,11 @@ VERSION HISTORY
 
 2.01 (Apr 24, 2010) - avoiding to mess with UNC paths as much as possible, as it
                       proved to be an unreliable way to figure out where FS is
-                      installed. Now using the path from the running FS9.exe;
-                      Not closing the connection to FSUIPC on shutdown, as this
-                      sometimes causes FSUIPC to crash FS when terminating.
+                      installed. Now using the path from the running FS9.exe
+
+2.02 (Apr 25, 2010) - Sporadically, the DLL variant would cause an FS crash on
+                      shutdown. The shutdown is now better coordinated so that
+                      this (hopefully) does not happen anymore.
 
 
 ACKNOWLEDGEMENTS

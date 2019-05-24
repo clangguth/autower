@@ -68,11 +68,13 @@
     to get initialized, and keeps asking whether it should continue.
 
 2.01 - April 24, 2010
-- bugfix to handle UNC paths better. In fact, I'm now ignoring UNC as much as I can,
-  because it proved to be a freaking mess. Instead, I get the path from the running
-  FS9 process.
-- Another FSUIPC quirk: not cleaning up after myself, as this sometimes crashes FS
-  on shutdown.
+  - bugfix to handle UNC paths better. In fact, I'm now ignoring UNC as much as I can,
+    because it proved to be a freaking mess. Instead, I get the path from the running
+    FS9 process.
+
+2.02 - April 25, 2010
+  - Sporadically, the DLL variant would cause an FS crash on shutdown. The shutdown
+    is now better coordinated so that this (hopefully) does not happen anymore.
 */
 
 #include <windows.h>
@@ -178,7 +180,7 @@ AirportInfo* currentAirport = NULL;
 
 /* IPC result */
 DWORD ipcResult = 0;
-
+HANDLE ipcMutex = NULL;
 BOOL stopRequested = FALSE;
 
 /* convenience macro */
@@ -219,6 +221,12 @@ double calculateTowerAltitude();
 DWORD WINAPI commonMain( LPVOID dummy);
 void makeAbsolutePath(char* filename);
 
+void requestStop() {
+	WaitForSingleObject(ipcMutex, INFINITE);
+	stopRequested = TRUE;
+	ReleaseMutex(ipcMutex);
+}
+
 #ifdef BUILD_DLL
 void FSAPI module_init () {
 	DWORD thread;
@@ -226,7 +234,7 @@ void FSAPI module_init () {
 }
 
 void FSAPI module_deinit () {
-	stopRequested = TRUE;
+	requestStop();
 }
 
 BOOL WINAPI DllMain (HANDLE hDll, DWORD dwReason, LPVOID lpReserved) {
@@ -242,7 +250,7 @@ void debugAirport(char* bglFile, AirportInfo* airport) {
 
 #else
 BOOL WINAPI consoleHandler(DWORD event) {
-	stopRequested = TRUE;
+	requestStop();
 	Sleep(MAINLOOP_SLEEP_INTERVAL * 5);
 	return TRUE;
 }
@@ -843,7 +851,8 @@ void mainLoop() {
 		progress += MAINLOOP_SLEEP_INTERVAL;
 		if (progress >= config->updateInterval) {
 			progress = 0;
-			if (ipcReadData()) {
+			WaitForSingleObject(ipcMutex, INFINITE);
+			if (!stopRequested && ipcReadData()) {
 				AirportInfo *newAirport = findCurrentlyClosestAirport(2, config->towerMinCandidates, NULL);
 				BOOL reallyChanged = newAirport != currentAirport;
 				currentAirport = newAirport;
@@ -851,6 +860,7 @@ void mainLoop() {
 					airportChanged(reallyChanged);
 				}
 			}
+			ReleaseMutex(ipcMutex);
 		}
 	}
 #ifndef BUILD_DLL
@@ -1192,6 +1202,7 @@ int setupAirports() {
 }
 
 DWORD WINAPI commonMain( LPVOID dummy) {
+	ipcMutex = CreateMutexA(NULL, FALSE, NULL);
 	config = configInitialize();
 	if (!setup()) return 1;
 
