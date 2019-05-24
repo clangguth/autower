@@ -1,6 +1,11 @@
 This is a short guide about how to set up your system for compiling autower.
 I have done the below steps on a completely fresh Windows XP system, so I should
 not have forgotten anything. This worked as of April 17, 2010.
+
+*Update* It has been confirmed to still work in February 2011, although some steps
+have slightly changed -- but not enough to update the documentation :-P
+Some remarks as to possible changes have been included and marked.
+
 Your mileage may vary as newer versions of tools get released, but in principle
 the approach should roughly remain the same.
 
@@ -37,6 +42,10 @@ http://sourceforge.net/projects/mingw/files/Automated%20MinGW%20Installer
 store .exe to (e.g.) c:\temp\mingw\, then start it
 the "Minimal" version will do.
 install to whichever folder you want, I used the default c:\mingw\
+
+*UPDATE* Anything else then the default folder will probably cause
+more headaches than it's worth, so just use the default.
+
 set up the system-wide PATH variable to include mingw\bin folder.
 Test it by opening a command prompt and running "gcc". You should get the output
 "gcc: no input files".
@@ -73,6 +82,9 @@ from http://upx.sourceforge.net/ and put the executable in autower's base direct
 
 STEP 7: SET UP THE DEBUGGER (optional)
 ======================================
+*UPDATE* The installation step might be optional by now, as gdb seems to be installed
+by default. Just try it :-)
+
 Download GDB and a required dependency from http://sourceforge.net/projects/mingw/files/
 download latest gdb-*-mingw32-bin.tar.gz (under "GNU Source-level debugger")
 download latest libexpat-*-mingw32-dll-1.tar.gz (under "MinGW expat")

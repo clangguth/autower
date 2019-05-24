@@ -21,7 +21,6 @@ BEGIN
       VALUE "FileVersion", PRODUCT_VERSION
       VALUE "InternalName", PRODUCT
       VALUE "LegalCopyright", L"Christoph Langguth"
-//      VALUE "LegalCopyright", L"Copyright \251 2006-2010 Christoph Langguth"
       VALUE "License", L"GNU GPL - General Public License"
       VALUE "OriginalFilename", PRODUCT
       VALUE "ProductName", PRODUCT

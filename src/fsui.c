@@ -1,5 +1,5 @@
 /*
-    This file is part of autower, Copyright (C) Christoph Langguth, 2006 - 2010
+    This file is part of autower, Copyright (C) Christoph Langguth
 
     autower is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ WINAPI LPVOID (*getAddress)(char* entry, char* module);
 int __stdcall (*FSAlert)(char const * message, int buttons, int type);
 
 int __stdcall FSAlertFallback(char const * message, int buttons, int type) {
-	return MessageBoxA(NULL, message, WINDOW_TITLE, type);
+	return MessageBoxA(NULL, message, PRODUCT_FULL, type);
 }
 
 void FSMessageBox(char* message, UINT type) {
@@ -44,10 +44,11 @@ void FSMessageBox(char* message, UINT type) {
 	if (FSAlert != NULL && config->integratedUI) {
 		/* simulate a "title", avoiding to waste vertical space by intending horizontally */
 		strcpy(buf, "                ");
-		strcat(buf, WINDOW_TITLE);
+		strcat(buf, PRODUCT_FULL);
 		switch (type) {
 		case MB_ICONINFORMATION:
 			type = 1;
+			break;
 		default:
 			type = 0;
 			break;

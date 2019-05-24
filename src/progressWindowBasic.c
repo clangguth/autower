@@ -1,5 +1,5 @@
 /*
-    This file is part of autower, Copyright (C) Christoph Langguth, 2006 - 2010
+    This file is part of autower, Copyright (C) Christoph Langguth
 
     autower is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -122,15 +122,15 @@ DWORD WINAPI createWindow(LPVOID dummy) {
 	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
 	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wndclass.hbrBackground = (HBRUSH) COLOR_BACKGROUND;
-	wndclass.lpszClassName = WINDOW_TITLE;
+	wndclass.lpszClassName = PRODUCT_FULL;
 	wndclass.lpszMenuName = NULL;
 
 	RegisterClass(&wndclass);
 
 	hwndWindow = CreateWindowEx(
 		WS_EX_TOPMOST | WS_EX_NOPARENTNOTIFY | WS_EX_TOOLWINDOW,
-		WINDOW_TITLE,
-		WINDOW_TITLE,
+		PRODUCT_FULL,
+		PRODUCT_FULL,
 		WS_OVERLAPPED | WS_SIZEBOX,
 		0,
 		0,

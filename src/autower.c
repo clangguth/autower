@@ -19,7 +19,10 @@
 
 
 
-/* Version history
+/* As this is the main file, version history is tracked here.
+
+Version history
+===============
 
 1.01 - November 28, 2006
 - fixed reading of the initialization file for the command-line version. I knew
@@ -96,6 +99,27 @@
 2.1.1 - May 21, 2010
   - bugfix for negative (airport/tower) altitudes: were treated as unsigned before,
     resulting in an extremely high tower position
+
+2.1.2 - some time in 2010, not publicly released
+  - for very special setups, a single airport may have multiple AFCADs (one real, the
+    others dummy). These AFCADs share the same coordinates, so autower has a hard time
+    finding out which one is real, and which one is dummy. Dummy BGLs typically don't
+    make use of tower locations, so a simple possibility to flag an airport BGL as "dummy"
+    is to set its altitude to an unrealistic/physically impossible value. Any BGL
+    reporting a tower altitude of 1 km or more *below* sea level is thus ignored by autower
+    (treated as if it didn't exist).
+
+2.2.0 - Feb 26, 2011
+  - minor bugfix for displaying messages (wrong icon)
+  - default message display level changed to WARN (instead of INFO).
+  - now also considers "remote" scenery locations, and honors "required" attribute.
+  - dealing with missing sceneries refined:
+    - display a DETAIL message if scenery is unaccessible and not required
+    - display an INFO message if scenery is unaccessible but required.
+    - these changes, together with the change to the default log/display level, should make
+      startup more smooth in normal scenarios -- at the expense of users not knowing that there
+      might be a problem in their configuration.
+  - various refactorings.
 */
 
 #include <windows.h>
@@ -253,6 +277,10 @@ BOOL isDebuggedAirportSet() {
 	return FALSE;
 }
 
+BOOL isDebuggedAirport(AirportInfo* airport) {
+	return FALSE;
+}
+
 void debugAirport(char* bglFile, AirportInfo* airport) {
 }
 
@@ -266,7 +294,7 @@ BOOL WINAPI consoleHandler(DWORD event) {
 
 char debuggedAirport[8] = {0};
 int main(int argc, char** argv) {
-	SetConsoleTitleA(WINDOW_TITLE);
+	SetConsoleTitleA(PRODUCT_FULL);
 	config = configInitialize();
 	if (argc >= 2) {
 		strncpy(debuggedAirport, argv[1], 7);
@@ -308,12 +336,12 @@ void debugAirport(char* bglFile, AirportInfo* airport) {
 	if (!isDebuggedAirport(airport)) return;
 	BOOL final = bglFile == NULL;
 	if (!final)
-		display(DISPLAY_FATAL, "\r\n%s after processing %s", airport->icao, bglFile);
+		display(DISPLAY_ALWAYS, "\r\n%s after processing %s", airport->icao, bglFile);
 	else
-		display(DISPLAY_FATAL, "\r\nFINAL RESULT FOR %s (%s)", airport->icao, airport->name);
+		display(DISPLAY_ALWAYS, "\r\nFINAL RESULT FOR %s (%s)", airport->icao, airport->name);
 	unsigned int count = 0;
 	while (airport->com[count] != 0) {
-		display(DISPLAY_FATAL, "\tTower frequency: %.3f", printableCom(airport->com[count++]));
+		display(DISPLAY_ALWAYS, "\tTower frequency: %.3f", printableCom(airport->com[count++]));
 	}
 	if (!final) {
 		count = 0;
@@ -325,23 +353,23 @@ void debugAirport(char* bglFile, AirportInfo* airport) {
 	} else {
 		count = airport->runways;
 	}
-	display(DISPLAY_FATAL, "\tNumber of runways: %d", count);
+	display(DISPLAY_ALWAYS, "\tNumber of runways: %d", count);
 
 	double alt = convertAltitude(airport->altitude);
 	double lon = convertLongitude(airport->longitude);
 	double lat = convertLatitude(airport->latitude);
-	display(DISPLAY_FATAL, "\tAirport location (lat,lon,alt): (%f, %f, %f)", lat, lon, alt);
+	display(DISPLAY_ALWAYS, "\tAirport location (lat,lon,alt): (%f, %f, %f)", lat, lon, alt);
 
 	if (!final) {
 		lon = convertLongitude(airport->towerLongitude);
 		lat = convertLatitude(airport->towerLatitude);
 		alt = convertAltitude(airport->towerAltitude);
-		display(DISPLAY_FATAL, "\t  Tower location (lat,lon,alt): (%f, %f, %f)", lat, lon, alt);
+		display(DISPLAY_ALWAYS, "\t  Tower location (lat,lon,alt): (%f, %f, %f)", lat, lon, alt);
 	} else {
 		currentAirport = airport;
 		int towerPositionFlags = calculateTowerPosition(&lon, &lat);
 		alt = calculateTowerAltitude();
-		display(DISPLAY_FATAL, "\t  Tower location (lat,lon,alt): (%f, %f, %f)", lat, lon, alt);
+		display(DISPLAY_ALWAYS, "\t  Tower location (lat,lon,alt): (%f, %f, %f)", lat, lon, alt);
 		char buf[256];
 		if (convertAltitude(airport->towerAltitude) == 0) {
 			int runways = airport->runways;
@@ -351,8 +379,8 @@ void debugAirport(char* bglFile, AirportInfo* airport) {
 		} else {
 			strcpy(buf, "taken from AFCAD");
 		}
-		display(DISPLAY_FATAL, "\tTower altitude: %s",buf);
-		decodeAndDisplayTowerPositionFlags(DISPLAY_FATAL, towerPositionFlags);
+		display(DISPLAY_ALWAYS, "\tTower altitude: %s",buf);
+		decodeAndDisplayTowerPositionFlags(DISPLAY_ALWAYS, towerPositionFlags);
 	}
 }
 #endif
@@ -543,24 +571,21 @@ BOOL insertAirportInKdTree(AirportInfo *airport, int debugLevel) {
 unsigned int readDatabaseHeader(unsigned int header) {
 	if (header == 0) return 0;
 
-	/* For testing, this is a way to provoke the reaction to an incompatible version.
-	header &= 0xFFFFFF;
-	header |= 0x03000000;
-	*/
+	int version = (header >> 24);
+	// to simulate response to another version, do something like this:
+	//version = 1;
 
 	/* the highest 8 bits of the count encode the data file version */
-	if (header >> 24 < DATFILE_VERSION) {
-		/*
-		display(DISPLAY_INFO, "%s%s%s%s",
-			"A datafile from a previous version of " PRODUCT " has been detected.\r\n",
-			"Because of changes in the datafile layout, it needs to be rebuilt.\r\n",
-			"If you want to take advantage of possible new options, please make\r\n",
+	if (version < DATFILE_VERSION) {
+		display(DISPLAY_WARN, "%s%s%s%s",
+			"A datafile from a previous version of " PRODUCT " has been detected. ",
+			"Because of the update, the datafile needs to be rebuilt. ",
+			"If you want to take advantage of possible new options, please make ",
 			"sure you're using an up-to-date configuration file."
 		);
-		*/
 		return 0;
 	}
-	if (header >> 24 > DATFILE_VERSION) {
+	if (version > DATFILE_VERSION) {
 		display(DISPLAY_WARN, "%s%s%s",
 			"A datafile from a NEWER version of " PRODUCT " has been detected.\r\n",
 			"Because " PRODUCT " will not be able to work with this file, the datafile ",
@@ -796,21 +821,23 @@ double calculateTowerAltitude() {
 	return alt;
 }
 
-BOOL ipcSetTowerTo(double lat, double lon, double alt, BOOL setZoom) {
-	long long ipcLat = (long long)(double)(lat * (10001750.0*65536*65536) / 90.0);
-	long long ipcLon = (long long)(double)(lon * (65536.0*65536*65536*65536) / 360.0);
-	long long ipcAlt = (long long)(double)(alt * (65536.0*65536));
 
-	BOOL success = FSUIPC_Write(0x0D60, 8, &ipcAlt, &ipcResult);
-	success &= FSUIPC_Write(0x0D50, 8, &ipcLat, &ipcResult);
-	success &= FSUIPC_Write(0x0D58, 8, &ipcLon, &ipcResult);
-	if (setZoom) {
-		success &= FSUIPC_Write(0x8330, 2, &(config->zoomLevel), &ipcResult);
-	}
-	success &= FSUIPC_Process(&ipcResult);
-	if (!success) FSUIPC_Close();
-	return success;
+BOOL ipcSetTowerTo(double lat, double lon, double alt, BOOL setZoom) {
+        long long ipcLat = (long long)(double)(lat * (10001750.0*65536*65536) / 90.0);
+        long long ipcLon = (long long)(double)(lon * (65536.0*65536*65536*65536) / 360.0);
+        long long ipcAlt = (long long)(double)(alt * (65536.0*65536));
+
+        BOOL success = FSUIPC_Write(0x0D60, 8, &ipcAlt, &ipcResult);
+        success &= FSUIPC_Write(0x0D50, 8, &ipcLat, &ipcResult);
+        success &= FSUIPC_Write(0x0D58, 8, &ipcLon, &ipcResult);
+        if (setZoom) {
+                success &= FSUIPC_Write(0x8330, 2, &(config->zoomLevel), &ipcResult);
+        }
+        success &= FSUIPC_Process(&ipcResult);
+        if (!success) FSUIPC_Close();
+        return success;
 }
+
 
 int calculateTowerPosition(double* lon, double* lat) {
 	int flags = 0;
@@ -1133,19 +1160,35 @@ BOOL setupSceneryInfo() {
 
 		sprintf(areaName,"Area.%03d",maxLayer);
 		GetPrivateProfileString(areaName,"Local","",layerPath,sizeof(layerPath),sceneryInfo.sceneryCfg);
+		if (strlen(layerPath) == 0) {
+			GetPrivateProfileString(areaName,"Remote","",layerPath,sizeof(layerPath),sceneryInfo.sceneryCfg);
+			if (strlen(layerPath) == 0) continue;
+		}
 
-		if (strlen(layerPath) == 0) continue;
 		makeAbsolutePath(layerPath);
 		if (layerPath[strlen(layerPath)-1] != '\\') {
 			strcat(layerPath, "\\");
 		}
+
 		strcat(layerPath, SCENERY_DAT);
 		if (verifyAndFixSceneryDat(layerPath)) {
 			char* sceneryDatPath = malloc(strlen(layerPath)+1);
 			strcpy(sceneryDatPath, layerPath);
 			paths[sceneryInfo.layersCount++] = sceneryDatPath;
 		} else {
-			display(DISPLAY_WARN, "%s: %s could not be opened for reading. Ignoring that layer!", areaName, layerPath);
+			GetPrivateProfileString(areaName,"required","false",buf,sizeof(buf),sceneryInfo.sceneryCfg);
+			CharLower(buf);
+			if (strcmpi("true",buf)) {
+				// Layer is NOT required.
+				display(DISPLAY_DETAIL, "%s: %s (flagged as NOT required) could not be opened for reading. Ignoring that layer!", areaName, layerPath);
+			}
+			else {
+				/* previous versions issued a warning message here, but obviously FS does honor directories
+				 * not containing a scenery.dat. Consequently, the level of the message has been lowered
+				 * from DISPLAY_WARN to DISPLAY_INFO.
+				 */
+				display(DISPLAY_INFO, "%s: %s could not be opened for reading. Ignoring that layer!", areaName, layerPath);
+			}
 		}
 	}
 	sceneryInfo.layerDat = malloc(sizeof(char*) * sceneryInfo.layersCount);
@@ -1618,6 +1661,17 @@ int parseAirportRecord(char* bglFile, LPVOID base, DWORD offset) {
 	BglAirportRecord* record = base + offset;
 	AirportInfo* airport = createBasicAirportInfoFromBglRecord(record);
 
+	if (airport->towerAltitude != 0 && convertAltitude(airport->towerAltitude) <= -1000) {
+		debugAirport(bglFile, airport);
+		int level = DISPLAY_DETAIL;
+		if (isDebuggedAirport(airport)) {
+			level = DISPLAY_ALWAYS;
+		}
+		display(level, "%s IGNORED because tower altitude %f <= -1000 m ASL",
+				airport->icao, convertAltitude(airport->towerAltitude));
+		free(airport);
+		return 0;
+	}
 	if (airportsTree != NULL) {
 		AirportInfo* existing = findOverriddenAirport(airport);
 		if (existing != NULL) {

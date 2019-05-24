@@ -21,7 +21,9 @@
 #define PRODUCT_H_
 
 #define PRODUCT "autower"
-#define PRODUCT_VERSION "2.1.1"
-#define PRODUCT_VERSION_BIN 2, 1, 1, 0
+#define PRODUCT_VERSION "2.2.0"
+#define PRODUCT_VERSION_BIN 2, 2, 0, 0
+
+#define PRODUCT_FULL PRODUCT " " PRODUCT_VERSION
 
 #endif /* PRODUCT_H_ */

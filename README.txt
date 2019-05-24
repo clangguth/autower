@@ -1,7 +1,7 @@
 
 
           ===================================================
-          = autower 2.1 (C) Christoph Langguth, 2006 - 2010 =
+          = autower 2.2 (C) Christoph Langguth, 2006 - 2011 =
           ===================================================
 
 
@@ -231,7 +231,9 @@ A: Even though -- by now -- I get roughly the same amount of hits for the latter
 VERSION HISTORY
 ===============
 
-1.0 (Nov 28, 2006) - first public release
+NOTE: a more detailed version history is available in the source code distribution.
+
+1.0 (Nov 28, 2006)  - first public release
 1.01 (Nov 28, 2006) - fixed a nasty bug that caused the command-line version not
                       to read the configuration. Oops, sorry. Also adjusted the
                       default values and made some changes to autower.ini
@@ -299,6 +301,16 @@ VERSION HISTORY
                        The altitude was wrongly treated as an unsigned number,
                        which resulted in extreme positive values instead of
                        negative ones.
+                       
+2.1.2 (unreleased)   - Included support for very special scenarios where there
+                       may be multiple BGL files for a single airport. In short,
+                       autower now ignores BGL files where the tower altitude is
+                       set to anything less than -1000 meters.
+
+2.2.0 (Feb 26, 2011) - autower now also considers sceneries defined as remote, and
+                       is less picky about being able to process scenery files.
+                     - changed the default log level
+                     - Various other minor fixes & cleanups
 
 
 ACKNOWLEDGEMENTS

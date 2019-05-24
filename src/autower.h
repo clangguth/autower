@@ -32,7 +32,9 @@
 #define DATAFILE_REL "autower.dat"
 #define INIFILE_REL "autower.ini"
 
-#define DATFILE_VERSION 2
+// between version 2 and 3, there have actually not been any structural changes,
+// but the detection of what should go there has changed, so an update is required.
+#define DATFILE_VERSION 3
 
 #define ICAOCODE = " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 #define RADIUS 3443.9
@@ -117,5 +119,13 @@ struct KdNode
 KdTree treeInsertAirport( LatLon Item, AirportInfo* payload, KdTree T );
 void treeFindAirport( LatLon Low, LatLon High, KdTree T);
 void treeFindResultCallback(AirportInfo* nextResult);
+
+#pragma pack(1)
+typedef struct LatLonAlt {
+	long long latitude;
+	long long altitude;
+	long long longitude;
+} LatLonAlt;
+
 
 #endif /* AUTOWER_H_ */

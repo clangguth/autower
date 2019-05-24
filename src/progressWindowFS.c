@@ -1,5 +1,5 @@
 /*
-    This file is part of autower, Copyright (C) Christoph Langguth, 2006 - 2010
+    This file is part of autower, Copyright (C) Christoph Langguth
 
     autower is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -74,7 +74,7 @@ void updateWindow(BOOL updateLayers) {
 		return;
 	}
 	lastUpdate = GetTickCount();
-	sprintf(buf, PRODUCT " is updating its index...\r\n\r\n"
+	sprintf(buf, PRODUCT_FULL " is updating its index...\r\n\r\n"
 			"Scanned %d files, %d/%d layers\r\n"
 			"Found %d airports", files1, layers1, totalLayers1, airports1);
 	FSUpdateModelessMessage(handle, buf);
